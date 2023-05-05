@@ -2,6 +2,7 @@ package rtimpus
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"time"
 
@@ -20,15 +21,46 @@ func (c *Connection) ProcessMessage(message []byte) {
 	switch c.Handshake {
 	case Uninitialized:
 		c.processUninitialized(message)
+	case VersionSent:
+		c.processVersionSent(message)
+	case AckSent:
+		c.processAckSent(message)
+	case Done: // client and the server exchange messages.
+		c.processDone(message)
 	}
+}
+
+func (c *Connection) processDone(message []byte) {
+	// Exchange of messages happens here.
+}
+
+func (c *Connection) processAckSent(message []byte) {
+	// C2 is received here if everything went as expected
+	fmt.Println(message)
+	c.Handshake = Done
+}
+
+func (c *Connection) processVersionSent(message []byte) {
+	// Send S2
+	s2 := make([]byte, 0, HANDSHAKE_PACKET_SIZE)
+
+	timestamp := time.Now().Unix()
+	binary.BigEndian.PutUint32(s2, uint32(timestamp))
+	clientTimestamp := message[4:8]
+	s2 = append(s2, clientTimestamp...)
+	hash := message[8:]
+	s2 = append(s2, hash...)
+
+	c.conn.Write(s2)
+	c.Handshake = AckSent
 }
 
 func (c *Connection) processUninitialized(message []byte) {
 	if isVersionSupported(message) {
 		// Send S0
 		c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
-		// Send S1
 
+		// Send S1
 		s1 := make([]byte, 0, HANDSHAKE_PACKET_SIZE)
 
 		timestamp := time.Now().Unix()
@@ -38,9 +70,10 @@ func (c *Connection) processUninitialized(message []byte) {
 		s1 = append(s1, []byte(hash)...)
 
 		c.conn.Write(s1)
-
+		c.Handshake = VersionSent
 	} else {
-		c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
+		// c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
+		c.conn.Close()
 	}
 }
 
