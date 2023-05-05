@@ -33,9 +33,9 @@ func (c *Connection) processUninitialized(message []byte) {
 
 		timestamp := time.Now().Unix()
 		binary.BigEndian.PutUint32(s1, uint32(timestamp))
-		s1 = append(s1[4:], []byte{0, 0, 0, 0}...)
+		s1 = append(s1, []byte{0, 0, 0, 0}...)
 		hash := []byte(utils.RandString(HANDSHAKE_PACKET_SIZE - 8))
-		s1 = append(s1[8:], []byte(hash)...)
+		s1 = append(s1, []byte(hash)...)
 
 		c.conn.Write(s1)
 
