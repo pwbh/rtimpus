@@ -48,7 +48,10 @@ func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 	connection.conn = tcpConn
 
 	go func() {
-		buf := make([]byte, 0, 1024)
+		buf := make([]byte, 0, 4096)
+		tmp := make([]byte, 256)
+
+		totalRead := 0
 
 		for {
 			n, err := tcpConn.Read(buf)
@@ -57,12 +60,18 @@ func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 				if err == io.EOF {
 					break
 				}
-				fmt.Fprintf(os.Stderr, "something wen't wrong during exchange on information:\n%v", err)
+				fmt.Fprintf(os.Stderr, "something wen't wrong during exchange of information:\n%v\n", err)
 				connection.Err = err
 				return
 			}
 
-			fmt.Println(buf[:n])
+			buf = append(buf, tmp[:n]...)
+			totalRead += n
+
+			if n != len(tmp) && n > 0 {
+				totalRead = 0
+				connection.ProcessMessage(buf[:totalRead])
+			}
 		}
 	}()
 

@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	listener, _ := rtimpus.StartRTMPListener("localhost:3333")
-	fmt.Println("Starting a test RTIMPUS listener")
+	listener, _ := rtimpus.StartRTMPListener("localhost:8000")
+	fmt.Println("Starting a test rtimpus listener")
 	defer rtimpus.Close(listener)
 	rtimpus.LoopConnections(listener)
 }

@@ -42,10 +42,8 @@ func (c *Connection) processAckSent(message []byte) {
 
 func (c *Connection) processVersionSent(message []byte) {
 	// Send S2
-	s2 := make([]byte, 0, HANDSHAKE_PACKET_SIZE)
-
-	timestamp := time.Now().Unix()
-	binary.BigEndian.PutUint32(s2, uint32(timestamp))
+	s2 := make([]byte, 4, HANDSHAKE_PACKET_SIZE)
+	binary.BigEndian.PutUint32(s2, uint32(time.Now().Unix()))
 	clientTimestamp := message[4:8]
 	s2 = append(s2, clientTimestamp...)
 	hash := message[8:]
@@ -61,10 +59,8 @@ func (c *Connection) processUninitialized(message []byte) {
 		c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
 
 		// Send S1
-		s1 := make([]byte, 0, HANDSHAKE_PACKET_SIZE)
-
-		timestamp := time.Now().Unix()
-		binary.BigEndian.PutUint32(s1, uint32(timestamp))
+		s1 := make([]byte, 4, HANDSHAKE_PACKET_SIZE)
+		binary.BigEndian.PutUint32(s1, uint32(time.Now().Unix()))
 		s1 = append(s1, []byte{0, 0, 0, 0}...)
 		hash := []byte(utils.RandString(HANDSHAKE_PACKET_SIZE - 8))
 		s1 = append(s1, []byte(hash)...)
