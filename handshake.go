@@ -1,6 +1,17 @@
 package rtimpus
 
-import "fmt"
+import (
+	"fmt"
+)
+
+type HandshakeState byte
+
+const (
+	Uninitialized HandshakeState = iota
+	VersionSent
+	AckSent
+	Done
+)
 
 type C0S0 struct {
 	Version int
