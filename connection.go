@@ -72,13 +72,12 @@ func (c *Connection) processUninitialized(message []byte) {
 		c.conn.Write(s1)
 		c.Handshake = VersionSent
 	} else {
-		// c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
-		c.conn.Close()
+		c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
 	}
 }
 
 func isVersionSupported(message []byte) bool {
-	if len(message) > 1 {
+	if len(message) < 1 {
 		return false
 	}
 
