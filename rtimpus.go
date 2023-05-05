@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-const SUPPORTED_VERSION = byte(3)
+const SUPPORTED_PROTOCOL_VERSION = byte(3)
 
 // StartRTMPServer will start an RTMP server on the provided address
 func StartRTMPServer(address string) (*net.TCPListener, error) {
@@ -22,6 +22,8 @@ func StartRTMPServer(address string) (*net.TCPListener, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	defer listener.Close()
 
 	go loopConnections(listener)
 
@@ -43,6 +45,7 @@ func loopConnections(listener *net.TCPListener) {
 
 func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 	connection := new(Connection)
+	connection.conn = tcpConn
 
 	go func() {
 		buf := make([]byte, 0, 1024)
