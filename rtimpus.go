@@ -46,18 +46,21 @@ func Close(listener *net.TCPListener) {
 func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 	connection := new(Connection)
 	connection.conn = tcpConn
+	connection.Handshake = Uninitialized
 
 	go func() {
 		buf := make([]byte, 0, 4096)
 		tmp := make([]byte, 256)
 
-		totalRead := 0
+		total := 0
 
 		for {
-			n, err := tcpConn.Read(buf)
+
+			n, err := tcpConn.Read(tmp)
 
 			if err != nil {
 				if err == io.EOF {
+					fmt.Fprintf(os.Stdout, "received IOF:\n%v\n", err)
 					break
 				}
 				fmt.Fprintf(os.Stderr, "something wen't wrong during exchange of information:\n%v\n", err)
@@ -65,12 +68,14 @@ func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 				return
 			}
 
+			total += n
 			buf = append(buf, tmp[:n]...)
-			totalRead += n
 
-			if n != len(tmp) && n > 0 {
-				totalRead = 0
-				connection.ProcessMessage(buf[:totalRead])
+			if len(tmp) > n {
+				fmt.Printf("Total bytes read: %d\n", total)
+				connection.ProcessMessage(buf[:total])
+				total = 0
+				buf = make([]byte, 0, 4096)
 			}
 		}
 	}()

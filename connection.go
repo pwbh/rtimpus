@@ -18,6 +18,7 @@ type Connection struct {
 }
 
 func (c *Connection) ProcessMessage(message []byte) {
+	fmt.Println(message)
 	switch c.Handshake {
 	case Uninitialized:
 		c.processUninitialized(message)
@@ -32,48 +33,57 @@ func (c *Connection) ProcessMessage(message []byte) {
 
 func (c *Connection) processDone(message []byte) {
 	// Exchange of messages happens here.
+	println("Exchanging messages?")
 }
 
 func (c *Connection) processAckSent(message []byte) {
 	// C2 is received here if everything went as expected
-	fmt.Println(message)
+
 	c.Handshake = Done
 }
 
 func (c *Connection) processVersionSent(message []byte) {
-	// Send S2
-	s2 := make([]byte, 4, HANDSHAKE_PACKET_SIZE)
-	binary.BigEndian.PutUint32(s2, uint32(time.Now().Unix()))
-	clientTimestamp := message[4:8]
-	s2 = append(s2, clientTimestamp...)
+
+	s2 := make([]byte, 8, HANDSHAKE_PACKET_SIZE)
+	clientTimestamp := message[:4]
+	copy(s2, clientTimestamp)
+	binary.BigEndian.PutUint32(s2[4:], uint32(time.Now().Unix()))
 	hash := message[8:]
 	s2 = append(s2, hash...)
 
+	// fmt.Println(s2)
+
 	c.conn.Write(s2)
+
 	c.Handshake = AckSent
 }
 
 func (c *Connection) processUninitialized(message []byte) {
 	if isVersionSupported(message) {
-		// Send S0
-		c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
+		// S0
+		s0 := []byte{SUPPORTED_PROTOCOL_VERSION}
+		c.conn.Write(s0)
 
-		// Send S1
-		s1 := make([]byte, 4, HANDSHAKE_PACKET_SIZE)
-		binary.BigEndian.PutUint32(s1, uint32(time.Now().Unix()))
+		// S1
+		s1 := make([]byte, 0, HANDSHAKE_PACKET_SIZE)
+		// Start of stream timestamp 0
 		s1 = append(s1, []byte{0, 0, 0, 0}...)
-		hash := []byte(utils.RandString(HANDSHAKE_PACKET_SIZE - 8))
-		s1 = append(s1, []byte(hash)...)
+		// 4 bytes of 0s
+		s1 = append(s1, []byte{0, 0, 0, 0}...)
+		hash := utils.RandString(HANDSHAKE_PACKET_SIZE - 8)
+		s1 = append(s1, hash...)
 
 		c.conn.Write(s1)
 		c.Handshake = VersionSent
+		c.processVersionSent(message[1:])
 	} else {
-		c.conn.Write([]byte{SUPPORTED_PROTOCOL_VERSION})
+		c.conn.Close()
 	}
+
 }
 
 func isVersionSupported(message []byte) bool {
-	if len(message) < 1 {
+	if len(message) == 0 {
 		return false
 	}
 
