@@ -72,7 +72,6 @@ func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 			buf = append(buf, tmp[:n]...)
 
 			if len(tmp) > n {
-				fmt.Printf("Total bytes read: %d\n", total)
 				connection.Process(buf[:total])
 				total = 0
 				buf = make([]byte, 0, 4096)

@@ -15,6 +15,7 @@ type Connection struct {
 	Phase Phase
 	Err   error
 	conn  *net.TCPConn
+	Hash  string
 }
 
 func (c *Connection) Process(message []byte) {
@@ -35,14 +36,12 @@ func (c *Connection) handleChunk(message []byte) {
 }
 
 func (c *Connection) processAckSent(message []byte) {
-	// C2 is received from the cleint here if everything went as expected
-	c.Phase = HandshakeDone
-
-	c2 := message[:1536]
-	fmt.Println("C2:")
-	fmt.Println(c2)
-
-	c.handleChunk(message[1536:])
+	if verifyRandomData([]byte(c.Hash), message[8:HANDSHAKE_PACKET_SIZE]) {
+		c.Phase = HandshakeDone
+		c.handleChunk(message[HANDSHAKE_PACKET_SIZE:])
+	} else {
+		c.conn.Close()
+	}
 }
 
 func (c *Connection) processUninitialized(message []byte) {
@@ -62,6 +61,7 @@ func (c *Connection) processUninitialized(message []byte) {
 		c.conn.Write(s1)
 
 		c.Phase = VersionSent
+		c.Hash = hash
 
 		// S2
 		s2 := make([]byte, 8, HANDSHAKE_PACKET_SIZE)
@@ -85,4 +85,18 @@ func isVersionSupported(message []byte) bool {
 	}
 
 	return SUPPORTED_PROTOCOL_VERSION == message[0]
+}
+
+func verifyRandomData(expected, result []byte) bool {
+	if len(expected) != len(result) {
+		return false
+	}
+
+	for i := 0; i < len(expected); i++ {
+		if expected[i] != result[i] {
+			return false
+		}
+	}
+
+	return true
 }
