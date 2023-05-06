@@ -4,13 +4,13 @@ import (
 	"fmt"
 )
 
-type HandshakeState byte
+type Phase byte
 
 const (
-	Uninitialized HandshakeState = iota
+	Uninitialized Phase = iota
 	VersionSent
 	AckSent
-	Done
+	HandshakeDone
 )
 
 type C0S0 struct {

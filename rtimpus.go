@@ -46,7 +46,7 @@ func Close(listener *net.TCPListener) {
 func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 	connection := new(Connection)
 	connection.conn = tcpConn
-	connection.Handshake = Uninitialized
+	connection.Phase = Uninitialized
 
 	go func() {
 		buf := make([]byte, 0, 4096)
@@ -73,7 +73,7 @@ func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 
 			if len(tmp) > n {
 				fmt.Printf("Total bytes read: %d\n", total)
-				connection.ProcessMessage(buf[:total])
+				connection.Process(buf[:total])
 				total = 0
 				buf = make([]byte, 0, 4096)
 			}
