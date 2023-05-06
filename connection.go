@@ -18,7 +18,6 @@ type Connection struct {
 }
 
 func (c *Connection) ProcessMessage(message []byte) {
-	fmt.Println(message)
 	switch c.Handshake {
 	case Uninitialized:
 		c.processUninitialized(message)
@@ -39,6 +38,8 @@ func (c *Connection) processDone(message []byte) {
 func (c *Connection) processAckSent(message []byte) {
 	// C2 is received here if everything went as expected
 
+	fmt.Println("C2:")
+	fmt.Println(message[:1536])
 	c.Handshake = Done
 }
 
@@ -73,8 +74,13 @@ func (c *Connection) processUninitialized(message []byte) {
 		hash := utils.RandString(HANDSHAKE_PACKET_SIZE - 8)
 		s1 = append(s1, hash...)
 
+		fmt.Println("S1:")
+		fmt.Println(s1)
+
 		c.conn.Write(s1)
+
 		c.Handshake = VersionSent
+		// Sending S2 as we've received C1 already
 		c.processVersionSent(message[1:])
 	} else {
 		c.conn.Close()
