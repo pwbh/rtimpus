@@ -58,6 +58,21 @@ func parseBasicHeader(b []byte) (fmt uint8, streamID uint32, headerLength int) {
 
 	return fmt, streamID, headerLength
 }
+func getChunkHeaderSizeByType(t uint8) (uint8, error) {
+	switch t {
+	case 0:
+		return 11, nil
+	case 1:
+		return 7, nil
+	case 2:
+		return 3, nil
+	case 3:
+		return 0, nil
+
+	default:
+		return 0, fmt.Errorf("unsupported fmt has been given")
+	}
+}
 
 func (c *Connection) processAckSent(message []byte) {
 	if verifyRandomData([]byte(c.Hash), message[8:HANDSHAKE_PACKET_SIZE]) {
