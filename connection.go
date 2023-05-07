@@ -32,27 +32,31 @@ func (c *Connection) Process(message []byte) {
 func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
 	fmt.Printf("Chunk arrived of size %d bytes\n", len(message))
-	fmt.Printf("Chunk stream id: %d fmt: %d\n", getChunkStreamID(message), getFmt(message))
+
+	cFmt, streamId, headerLength := parseBasicHeader(message)
+
+	fmt.Printf("FMT: %d, chunk stream id: %d, header length: %d\n", cFmt, streamId, headerLength)
+
+	timestamp := binary.BigEndian.Uint32([]byte{0x00, message[headerLength+1], message[headerLength+2], message[headerLength+3]}) & 0x00FFFFFF
+
+	fmt.Printf("timestamp: %d\n", timestamp)
 
 }
 
-func getChunkStreamID(b []byte) uint32 {
-	var chunkStreamID uint32
-	firstByte := uint32(b[0])
-	if firstByte < 64 {
-		chunkStreamID = firstByte
-	} else if firstByte < 128 {
-		secondByte := uint32(b[1])
-		chunkStreamID = (firstByte-64)<<8 + secondByte + 64
-	} else {
-		thirdByte := uint32(b[2])
-		chunkStreamID = (firstByte-128)<<16 + uint32(b[1])<<8 + thirdByte + 64
+func parseBasicHeader(b []byte) (fmt uint8, streamID uint32, headerLength int) {
+	fmt = uint8(b[0] >> 6)         // get the first two bits representing fmt
+	streamID = uint32(b[0] & 0x3f) // get the least significant 6 bits representing the chunk stream ID
+	headerLength = 1               // initialize header length to 1 byte
+
+	if streamID == 0 {
+		streamID = uint32(b[1]) + 64
+		headerLength = 2
+	} else if streamID == 1 {
+		streamID = uint32(b[2])*256 + uint32(b[1]) + 64
+		headerLength = 3
 	}
-	return chunkStreamID
-}
 
-func getFmt(b []byte) uint8 {
-	return uint8(b[0] >> 6)
+	return fmt, streamID, headerLength
 }
 
 func (c *Connection) processAckSent(message []byte) {
