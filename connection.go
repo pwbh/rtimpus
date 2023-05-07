@@ -32,7 +32,27 @@ func (c *Connection) Process(message []byte) {
 func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
 	fmt.Printf("Chunk arrived of size %d bytes\n", len(message))
-	fmt.Println(message)
+	fmt.Printf("Chunk stream id: %d fmt: %d\n", getChunkStreamID(message), getFmt(message))
+
+}
+
+func getChunkStreamID(b []byte) uint32 {
+	var chunkStreamID uint32
+	firstByte := uint32(b[0])
+	if firstByte < 64 {
+		chunkStreamID = firstByte
+	} else if firstByte < 128 {
+		secondByte := uint32(b[1])
+		chunkStreamID = (firstByte-64)<<8 + secondByte + 64
+	} else {
+		thirdByte := uint32(b[2])
+		chunkStreamID = (firstByte-128)<<16 + uint32(b[1])<<8 + thirdByte + 64
+	}
+	return chunkStreamID
+}
+
+func getFmt(b []byte) uint8 {
+	return uint8(b[0] >> 6)
 }
 
 func (c *Connection) processAckSent(message []byte) {
