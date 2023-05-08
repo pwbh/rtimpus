@@ -33,14 +33,17 @@ func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
 	fmt.Printf("Chunk arrived of size %d bytes\n", len(message))
 	header := parseHeader(message)
-	fmt.Printf("FMT: %d, chunk stream id: %d, header length: %d\n", header.BasicHeader.Type, header.BasicHeader.StreamID, header.BasicHeader.HeaderLength)
-	fmt.Printf("Timestamp: %d | Message length: %d | Message Type ID: %d | Message Stream ID: %d\n", header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
+	fmt.Printf("FMT: %d, Chunk Stream ID: %d, Header Length: %d\n", header.BasicHeader.Type, header.BasicHeader.StreamID, header.BasicHeader.Length)
+	fmt.Printf("Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
 
 	fmt.Println(string(message[12:]))
 }
 
 func (c *Connection) processAckSent(message []byte) {
-	if verifyRandomData([]byte(c.Hash), message[8:HANDSHAKE_PACKET_SIZE]) {
+	// skipping 8 bytes - 4 bytes time, 4 bytes time 2 bytes
+	randomEcho := message[8:HANDSHAKE_PACKET_SIZE]
+
+	if verifyRandomData([]byte(c.Hash), randomEcho) {
 		c.Phase = HandshakeDone
 		c.handleChunk(message[HANDSHAKE_PACKET_SIZE:])
 	} else {
@@ -56,7 +59,6 @@ func (c *Connection) processUninitialized(message []byte) {
 
 		// S1
 		s1 := make([]byte, 4, HANDSHAKE_PACKET_SIZE)
-		// Start of stream timestamp 0 also can be local server time
 		binary.BigEndian.PutUint32(s1, uint32(time.Now().Unix()))
 		// 4 bytes of 0s
 		s1 = append(s1, []byte{0, 0, 0, 0}...)
@@ -67,10 +69,11 @@ func (c *Connection) processUninitialized(message []byte) {
 		c.Phase = VersionSent
 		c.Hash = hash
 
+		c1 := message[1:]
+
 		// S2
 		s2 := make([]byte, 8, HANDSHAKE_PACKET_SIZE)
-		clientTimestamp := message[1:5]
-		copy(s2, clientTimestamp)
+		copy(s2, c1[:4])
 		binary.BigEndian.PutUint32(s2[4:], uint32(time.Now().Unix()))
 		c1Hash := message[9:]
 		s2 = append(s2, c1Hash...)
