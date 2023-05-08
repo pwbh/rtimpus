@@ -32,46 +32,9 @@ func (c *Connection) Process(message []byte) {
 func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
 	fmt.Printf("Chunk arrived of size %d bytes\n", len(message))
-
-	cFmt, streamId, headerLength := parseBasicHeader(message)
-
-	fmt.Printf("FMT: %d, chunk stream id: %d, header length: %d\n", cFmt, streamId, headerLength)
-
-	timestamp := binary.BigEndian.Uint32([]byte{0x00, message[headerLength+1], message[headerLength+2], message[headerLength+3]}) & 0x00FFFFFF
-
-	fmt.Printf("timestamp: %d\n", timestamp)
-
-}
-
-func parseBasicHeader(b []byte) (fmt uint8, streamID uint32, headerLength int) {
-	fmt = uint8(b[0] >> 6)         // get the first two bits representing fmt
-	streamID = uint32(b[0] & 0x3f) // get the least significant 6 bits representing the chunk stream ID
-	headerLength = 1               // initialize header length to 1 byte
-
-	if streamID == 0 {
-		streamID = uint32(b[1]) + 64
-		headerLength = 2
-	} else if streamID == 1 {
-		streamID = uint32(b[2])*256 + uint32(b[1]) + 64
-		headerLength = 3
-	}
-
-	return fmt, streamID, headerLength
-}
-func getChunkHeaderSizeByType(t uint8) (uint8, error) {
-	switch t {
-	case 0:
-		return 11, nil
-	case 1:
-		return 7, nil
-	case 2:
-		return 3, nil
-	case 3:
-		return 0, nil
-
-	default:
-		return 0, fmt.Errorf("unsupported fmt has been given")
-	}
+	header := parseHeader(message)
+	fmt.Printf("FMT: %d, chunk stream id: %d, header length: %d\n", header.BasicHeader.Type, header.BasicHeader.StreamID, header.BasicHeader.HeaderLength)
+	fmt.Printf("Timestamp: %d | Message length: %d | Message ID: %d | Message Stream ID: %d\n", header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
 }
 
 func (c *Connection) processAckSent(message []byte) {
