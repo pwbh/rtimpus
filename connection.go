@@ -34,7 +34,9 @@ func (c *Connection) handleChunk(message []byte) {
 	fmt.Printf("Chunk arrived of size %d bytes\n", len(message))
 	header := parseHeader(message)
 	fmt.Printf("FMT: %d, chunk stream id: %d, header length: %d\n", header.BasicHeader.Type, header.BasicHeader.StreamID, header.BasicHeader.HeaderLength)
-	fmt.Printf("Timestamp: %d | Message length: %d | Message ID: %d | Message Stream ID: %d\n", header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
+	fmt.Printf("Timestamp: %d | Message length: %d | Message Type ID: %d | Message Stream ID: %d\n", header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
+
+	fmt.Println(string(message[12:]))
 }
 
 func (c *Connection) processAckSent(message []byte) {

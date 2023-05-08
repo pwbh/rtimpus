@@ -69,6 +69,9 @@ func parseBasicHeader(b []byte) *BasicHeader {
 	basicHeader.StreamID = uint32(b[0] & 0x3f) // get the least significant 6 bits representing the chunk stream ID
 	basicHeader.HeaderLength = 1               // initialize header length to 1 byte
 
+	// StreamID == 2 - reserved for low-level protocol control messages and commands
+	// StreamID == - 3 - 64 represent the complete stream ID // e.g. 1 byte only
+
 	if basicHeader.StreamID == 0 {
 		basicHeader.StreamID = uint32(b[1]) + 64
 		basicHeader.HeaderLength = 2
