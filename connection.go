@@ -72,6 +72,7 @@ func (c *Connection) processUninitialized(message []byte) {
 		// S2
 		s2 := make([]byte, 8, HANDSHAKE_PACKET_SIZE)
 		copy(s2, c1[:4])
+		// Setting time2 to when we started reading from the beginning of the handshake e.g. no time passed yet (0)
 		binary.BigEndian.PutUint32(s2[4:], 0)
 		c1Hash := c1[8:]
 		s2 = append(s2, c1Hash...)
