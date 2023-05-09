@@ -31,12 +31,10 @@ func (c *Connection) Process(message []byte) {
 
 func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
-	fmt.Printf("Chunk arrived of size %d bytes\n", len(message))
 	header := parseHeader(message)
 	fmt.Printf("FMT: %d, Chunk Stream ID: %d, Header Length: %d\n", header.BasicHeader.Type, header.BasicHeader.StreamID, header.BasicHeader.Length)
 	fmt.Printf("Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
 
-	fmt.Println(string(message[12:]))
 }
 
 func (c *Connection) processAckSent(message []byte) {
@@ -74,8 +72,8 @@ func (c *Connection) processUninitialized(message []byte) {
 		// S2
 		s2 := make([]byte, 8, HANDSHAKE_PACKET_SIZE)
 		copy(s2, c1[:4])
-		binary.BigEndian.PutUint32(s2[4:], uint32(time.Now().Unix()))
-		c1Hash := message[9:]
+		binary.BigEndian.PutUint32(s2[4:], 0)
+		c1Hash := c1[8:]
 		s2 = append(s2, c1Hash...)
 		c.conn.Write(s2)
 
