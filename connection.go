@@ -32,8 +32,7 @@ func (c *Connection) Process(message []byte) {
 func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
 	header := parseHeader(message)
-	fmt.Printf("FMT: %d, Chunk Stream ID: %d, Header Length: %d\n", header.BasicHeader.Type, header.BasicHeader.StreamID, header.BasicHeader.Length)
-	fmt.Printf("Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
+	fmt.Printf("Chunk Type: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", header.BasicHeader.Type, header.Timestamp, header.MessageLength, header.MessageTypeId, header.MessageStreamId)
 
 }
 

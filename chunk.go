@@ -23,10 +23,10 @@ func parseHeader(message []byte) *Header {
 
 	switch basicHeader.Type {
 	case 0:
-		timestamp := uint32(uint(message[basicHeader.Length+3]) | uint(message[basicHeader.Length+5])<<2 | uint(message[basicHeader.Length+1])<<16)
-		messageLength := uint32(uint(message[basicHeader.Length+6]) | uint(message[basicHeader.Length+5])<<8 | uint(message[basicHeader.Length+4])<<16)
-		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+7]})
-		messageStreamId := binary.BigEndian.Uint32([]byte{message[basicHeader.Length+8], message[basicHeader.Length+9], message[basicHeader.Length+10], message[basicHeader.Length+11]})
+		timestamp := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
+		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
+		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
+		messageStreamId := binary.BigEndian.Uint32([]byte{message[basicHeader.Length+7], message[basicHeader.Length+8], message[basicHeader.Length+9], message[basicHeader.Length+10]})
 
 		return &Header{
 			BasicHeader:     basicHeader,
@@ -36,9 +36,9 @@ func parseHeader(message []byte) *Header {
 			MessageStreamId: messageStreamId,
 		}
 	case 1:
-		timestampDelta := uint32(uint(message[basicHeader.Length+3]) | uint(message[basicHeader.Length+5])<<2 | uint(message[basicHeader.Length+1])<<16)
-		messageLength := uint32(uint(message[basicHeader.Length+6]) | uint(message[basicHeader.Length+5])<<8 | uint(message[basicHeader.Length+4])<<16)
-		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+7]})
+		timestampDelta := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
+		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
+		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
 
 		return &Header{
 			BasicHeader:   basicHeader,
@@ -47,7 +47,7 @@ func parseHeader(message []byte) *Header {
 			MessageTypeId: messageTypeId,
 		}
 	case 2:
-		timestampDelta := uint32(uint(message[basicHeader.Length+3]) | uint(message[basicHeader.Length+5])<<2 | uint(message[basicHeader.Length+1])<<16)
+		timestampDelta := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
 
 		return &Header{
 			BasicHeader: basicHeader,
