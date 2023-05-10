@@ -32,9 +32,20 @@ func (c *Connection) Process(message []byte) {
 func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
 	// header := parseHeader(message)
-	chunk := parseChunk(message)
-	fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
-	fmt.Printf("New chunk size: %d (%d)\n", chunk.payload.data, binary.BigEndian.Uint32(chunk.payload.data))
+	fmt.Printf("Message len: %d\n", len(message))
+	totalByteParsed := 0
+
+	for totalByteParsed < len(message) {
+		chunk := parseChunk(message[totalByteParsed:])
+		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
+
+		totalByteParsed += int(getChunkHeaderLength(chunk.header) + chunk.header.MessageLength)
+	}
+
+	// chunk := parseChunk(message)
+	// fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
+	// fmt.Printf("New chunk size: %d (%d)\n", chunk.payload.data, binary.BigEndian.Uint32(chunk.payload.data))
+	// fmt.Println(message)
 }
 
 func (c *Connection) processAckSent(message []byte) {
