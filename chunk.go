@@ -18,6 +18,26 @@ type Header struct {
 	MessageStreamId uint32
 }
 
+type Payload struct {
+	data []byte
+}
+
+type Chunk struct {
+	header  *Header
+	payload *Payload
+}
+
+func parseChunk(message []byte) *Chunk {
+	header := parseHeader(message)
+
+	chunkHeaderLength := getChunkHeaderLength(header)
+
+	return &Chunk{
+		header:  header,
+		payload: &Payload{data: message[chunkHeaderLength : chunkHeaderLength+header.MessageLength]},
+	}
+}
+
 func parseHeader(message []byte) *Header {
 	basicHeader := parseBasicHeader(message)
 
@@ -78,4 +98,19 @@ func parseBasicHeader(b []byte) *BasicHeader {
 	}
 
 	return basicHeader
+}
+
+func getChunkHeaderLength(header *Header) uint32 {
+	basicHeaderLength := header.BasicHeader.Length
+
+	switch header.BasicHeader.Type {
+	case 0:
+		return 11 + basicHeaderLength
+	case 1:
+		return 7 + 11 + basicHeaderLength
+	case 2:
+		return 3 + 11 + basicHeaderLength
+	default:
+		return 0
+	}
 }
