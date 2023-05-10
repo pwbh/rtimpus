@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	listener, err := rtimpus.StartRTMPListener("localhost:1935")
+	listener, err := rtimpus.Listen("localhost:1935")
 
 	if err != nil {
 		fmt.Println(err)
@@ -15,6 +15,6 @@ func main() {
 	}
 
 	fmt.Printf("Listening for RTMP connections on %s\n", listener.Addr())
-	defer rtimpus.Close(listener)
+	defer listener.Close()
 	rtimpus.LoopConnections(listener)
 }

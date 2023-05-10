@@ -10,7 +10,7 @@ import (
 const SUPPORTED_PROTOCOL_VERSION = byte(3)
 
 // StartRTMPServer will start an RTMP server on the provided address
-func StartRTMPListener(address string) (*net.TCPListener, error) {
+func Listen(address string) (*Listener, error) {
 	laddr, err := net.ResolveTCPAddr("tcp", address)
 
 	if err != nil {
@@ -23,12 +23,14 @@ func StartRTMPListener(address string) (*net.TCPListener, error) {
 		return nil, err
 	}
 
-	return listener, nil
+	rtmpListner := &Listener{tcpListener: listener}
+
+	return rtmpListner, nil
 }
 
-func LoopConnections(listener *net.TCPListener) {
+func LoopConnections(listener *Listener) {
 	for {
-		conn, err := listener.AcceptTCP()
+		conn, err := listener.tcpListener.AcceptTCP()
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "something wen't wrong couldn't accept TCP connection:\n%v", err)
@@ -37,10 +39,6 @@ func LoopConnections(listener *net.TCPListener) {
 
 		go listenOnConnection(conn)
 	}
-}
-
-func Close(listener *net.TCPListener) {
-	listener.Close()
 }
 
 func listenOnConnection(tcpConn *net.TCPConn) *Connection {
