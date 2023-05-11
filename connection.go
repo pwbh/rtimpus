@@ -35,10 +35,12 @@ func (c *Connection) handleChunk(message []byte) {
 	fmt.Printf("Message len: %d\n", len(message))
 	totalByteParsed := 0
 
+	fmt.Println(string([]byte{7, 99, 111, 110, 110, 101, 99, 116}))
+
 	for totalByteParsed < len(message) {
 		chunk := parseChunk(message[totalByteParsed:])
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
-
+		fmt.Println(chunk.payload.data)
 		totalByteParsed += int(getChunkHeaderLength(chunk.header) + chunk.header.MessageLength)
 	}
 
