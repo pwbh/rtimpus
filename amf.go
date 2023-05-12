@@ -88,19 +88,19 @@ func getFoundOffset(message []byte, currentIndex int) (int, bool) {
 
 func isAmfType(b byte) bool {
 	AMF0Types := [...]byte{
-		0x00, // Number
-		0x01, // Boolean
-		0x02, // String
-		0x03, // Object (Set of key/value pairs)
-		0x05, // Null
-		0x08, // ECMA Array
-		0x09, // Object End
-		0x0a, // Strict Array
-		0x0b, // Date
-		0x0c, // Long String
-		0x0f, // XML Document
-		0x10, // Typed Object
-		0x11} // Switch to AMF3
+		AMF0Number,
+		AMF0Boolean,
+		AMF0Stirng,
+		AMF0Object,
+		AMF0Null,
+		AMF0ECMAArray,
+		AMF0ObjectEnd,
+		AMF0StrictArray,
+		AMF0Date,
+		AMF0LongString,
+		AMF0XMLDocument,
+		AMF0TypedObject,
+		AMF0SwitchToAMF3}
 
 	for i := 0; i < len(AMF0Types)-1; i++ {
 		if AMF0Types[i] == b {
