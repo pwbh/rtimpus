@@ -4,22 +4,6 @@ import "fmt"
 
 type AMF0 byte
 
-const (
-	AMF0Number       = AMF0(0x00)
-	AMF0Boolean      = AMF0(0x01)
-	AMF0String       = AMF0(0x02)
-	AMF0Object       = AMF0(0x03)
-	AMF0Null         = AMF0(0x05)
-	AMF0ECMAArray    = AMF0(0x08)
-	AMF0ObjectEnd    = AMF0(0x09)
-	AMF0StrictArray  = AMF0(0x0a)
-	AMF0Date         = AMF0(0x0b)
-	AMF0LongString   = AMF0(0x0c)
-	AMF0XMLDocument  = AMF0(0x0f)
-	AMF0TypedObject  = AMF0(0x10)
-	AMF0SwitchToAMF3 = AMF0(0x11)
-)
-
 type Value struct {
 	Type AMF0
 	Data []byte
@@ -87,23 +71,23 @@ func getFoundOffset(message []byte, currentIndex int) (int, bool) {
 }
 
 func isAmfType(b byte) bool {
-	amf0Types :=
-		[]byte{0x00,
-			0x01,
-			0x02,
-			0x03,
-			0x05,
-			0x08,
-			0x09,
-			0x0a,
-			0x0b,
-			0x0c,
-			0x0f,
-			0x10,
-			0x11}
+	AMF0Types := [...]byte{
+		0x00, // Number
+		0x01, // Boolean
+		0x02, // String
+		0x03, // Object (Set of key/value pairs)
+		0x05, // Null
+		0x08, // ECMA Array
+		0x09, // Object End
+		0x0a, // Strict Array
+		0x0b, // Date
+		0x0c, // Long String
+		0x0f, // XML Document
+		0x10, // Typed Object
+		0x11} // Switch to AMF3
 
-	for i := 0; i < len(amf0Types)-1; i++ {
-		if amf0Types[i] == b {
+	for i := 0; i < len(AMF0Types)-1; i++ {
+		if AMF0Types[i] == b {
 			return true
 		}
 	}
