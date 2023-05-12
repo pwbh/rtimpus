@@ -44,15 +44,15 @@ func UnmarshalAMF0(message []byte) *AMF0Result {
 		if ok && end > start {
 			if phase == 0 {
 				fmt.Println(message[start:end])
+				phase = 1
 			} else if phase == 1 {
 				fmt.Println(message[start:end])
+				phase = 2
 			} else {
 				fmt.Println(string(message[start:end]))
 			}
 
 			start = end
-			phase++
-
 		}
 
 		if offset > 0 {
