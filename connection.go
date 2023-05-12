@@ -42,6 +42,7 @@ func (c *Connection) handleChunk(message []byte) {
 
 		if chunk.header.MessageTypeId == 20 {
 			UnmarshalAMF0(chunk.payload.data)
+
 		}
 
 		totalByteParsed += int(getChunkHeaderLength(chunk.header) + chunk.header.MessageLength)
