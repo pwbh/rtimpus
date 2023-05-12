@@ -4,6 +4,22 @@ import "fmt"
 
 type AMF0 byte
 
+const (
+	AMF0Number       = 0x00 // Number
+	AMF0Boolean      = 0x01 // Boolean
+	AMF0Stirng       = 0x02 // String
+	AMF0Object       = 0x03 // Object (Set of key/value pairs)
+	AMF0Null         = 0x05 // Null
+	AMF0ECMAArray    = 0x08 // ECMA Array
+	AMF0ObjectEnd    = 0x09 // Object End
+	AMF0StrictArray  = 0x0a // Strict Array
+	AMF0Date         = 0x0b // Date
+	AMF0LongString   = 0x0c // Long String
+	AMF0XMLDocument  = 0x0f // XML Document
+	AMF0TypedObject  = 0x10 // Typed Object
+	AMF0SwitchToAMF3 = 0x11 // Switch to AMF3
+)
+
 type Value struct {
 	Type AMF0
 	Data []byte
@@ -33,7 +49,7 @@ func UnmarshalAMF0(message []byte) *AMF0Result {
 				fmt.Println(message[start:end])
 				phase = 2
 			} else {
-				fmt.Println(string(message[start:end]))
+				fmt.Println(message[start:end])
 			}
 
 			start = end
