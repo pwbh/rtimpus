@@ -41,7 +41,7 @@ func (c *Connection) handleChunk(message []byte) {
 		fmt.Println(chunk.payload.data)
 
 		// Message Type ID 18,20 is Command Message
-		if chunk.header.MessageTypeId == 20 {
+		if chunk.header.MessageTypeId == 18 || chunk.header.MessageTypeId == 20 {
 			command, err := UnmarshalCommand(chunk.payload.data)
 
 			if err != nil {
