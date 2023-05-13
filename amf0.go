@@ -19,11 +19,11 @@ const (
 	AMF0ObjectEndMarker = 0x09
 )
 
+type Object map[string]interface{}
+
 type AMF0Decoder struct {
 	reader io.Reader
 }
-
-type Object map[string]interface{}
 
 func NewAMF0Decoder(reader io.Reader) *AMF0Decoder {
 	return &AMF0Decoder{reader: reader}
