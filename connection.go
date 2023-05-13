@@ -1,6 +1,7 @@
 package rtimpus
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -41,7 +42,21 @@ func (c *Connection) handleChunk(message []byte) {
 		fmt.Println(chunk.payload.data)
 
 		if chunk.header.MessageTypeId == 20 {
-			UnmarshalAMF0(chunk.payload.data)
+
+			data := bytes.NewBuffer(chunk.payload.data)
+
+			decoder := NewAMF0Decoder(data)
+
+			for i := 0; i < 10; i++ {
+				str, err := decoder.Decode()
+
+				if err != nil {
+					return
+				}
+
+				fmt.Println(str)
+
+			}
 
 		}
 
