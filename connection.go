@@ -1,7 +1,6 @@
 package rtimpus
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -41,23 +40,16 @@ func (c *Connection) handleChunk(message []byte) {
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
 		fmt.Println(chunk.payload.data)
 
+		// Message Type ID 18,20 is Command Message
 		if chunk.header.MessageTypeId == 20 {
+			command, err := UnmarshalCommand(chunk.payload.data)
 
-			data := bytes.NewBuffer(chunk.payload.data)
-
-			decoder := NewAMF0Decoder(data)
-
-			for i := 0; i < 10; i++ {
-				str, err := decoder.Decode()
-
-				if err != nil {
-					return
-				}
-
-				fmt.Println(str)
-
+			if err != nil {
+				fmt.Println(err)
+				return
 			}
 
+			fmt.Println(command)
 		}
 
 		totalByteParsed += int(getChunkHeaderLength(chunk.header) + chunk.header.MessageLength)

@@ -23,6 +23,8 @@ type AMF0Decoder struct {
 	reader io.Reader
 }
 
+type Object map[string]interface{}
+
 func NewAMF0Decoder(reader io.Reader) *AMF0Decoder {
 	return &AMF0Decoder{reader: reader}
 }
@@ -37,7 +39,9 @@ func (d *AMF0Decoder) readByte() (byte, error) {
 
 func (d *AMF0Decoder) readBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
+
 	_, err := d.reader.Read(b)
+
 	return b, err
 }
 
@@ -122,8 +126,8 @@ func (d *AMF0Decoder) decodeString() (string, error) {
 	return string(data), nil
 }
 
-func (d *AMF0Decoder) decodeObject() (map[string]interface{}, error) {
-	obj := make(map[string]interface{})
+func (d *AMF0Decoder) decodeObject() (Object, error) {
+	obj := make(Object)
 
 	for {
 		name, err := d.decodeString()
@@ -134,12 +138,15 @@ func (d *AMF0Decoder) decodeObject() (map[string]interface{}, error) {
 
 		if name == "" {
 			marker, err := d.readByte()
+
 			if err != nil {
 				return nil, err
 			}
+
 			if marker != AMF0ObjectEndMarker {
 				return nil, errors.New("missing AMF0 object end marker")
 			}
+
 			break
 		}
 
@@ -155,24 +162,28 @@ func (d *AMF0Decoder) decodeObject() (map[string]interface{}, error) {
 	return obj, nil
 }
 
-func (d *AMF0Decoder) decodeEcmaArray() (map[string]interface{}, error) {
+func (d *AMF0Decoder) decodeEcmaArray() (Object, error) {
 	length, err := d.readUint32()
 
 	if err != nil {
 		return nil, err
 	}
 
-	obj := make(map[string]interface{})
+	obj := make(Object)
 
 	for i := uint32(0); i < length; i++ {
 		name, err := d.decodeString()
+
 		if err != nil {
 			return nil, err
 		}
+
 		value, err := d.Decode()
+
 		if err != nil {
 			return nil, err
 		}
+
 		obj[name] = value
 	}
 
