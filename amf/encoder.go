@@ -78,30 +78,3 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 
 	return nil
 }
-
-func getTotalLength(obj Object) int {
-	length := 0
-
-	for k, v := range obj {
-		valueLen := 0
-
-		switch v := v.(type) {
-		case Object:
-			valueLen = getTotalLength(v)
-		case string:
-			valueLen = len(v)
-		case uint16:
-			valueLen = 2
-		case uint32:
-			valueLen = 4
-		case []uint32:
-			valueLen = len(v) * 4
-		default:
-			valueLen = 0
-		}
-
-		length += len(k) + valueLen
-	}
-
-	return length
-}
