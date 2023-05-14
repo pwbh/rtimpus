@@ -49,7 +49,7 @@ func (c *Connection) handleChunk(message []byte) {
 				return
 			}
 
-			fmt.Println(command)
+			fmt.Printf("%+v\n", command)
 		}
 
 		totalByteParsed += int(getChunkHeaderLength(chunk.header) + chunk.header.MessageLength)

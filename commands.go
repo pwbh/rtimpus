@@ -5,26 +5,28 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/pwbh/rtimpus/amf"
 )
 
 type Connect struct {
 	CommandName          string
 	TransactionID        float64
-	CommandObject        Object
-	OptionaUserArguments Object
+	CommandObject        amf.Object
+	OptionaUserArguments amf.Object
 }
 
 type CallResponse struct {
 	ProcedureName string
 	TransactionID float64
-	CommandObject Object
-	Response      Object
+	CommandObject amf.Object
+	Response      amf.Object
 }
 
 type CreateStream struct {
 	CommandName   string
 	TransactionID float64
-	CommandObject Object
+	CommandObject amf.Object
 }
 
 const (
@@ -34,7 +36,7 @@ const (
 
 func UnmarshalCommand(message []byte) (interface{}, error) {
 	buffer := bytes.NewBuffer(message)
-	decoder := NewAMF0Decoder(buffer)
+	decoder := amf.NewAMF0Decoder(buffer)
 
 	value, err := decoder.Decode()
 
@@ -54,7 +56,7 @@ func UnmarshalCommand(message []byte) (interface{}, error) {
 	}
 }
 
-func getConnectResult(decoder *AMF0Decoder) (*Connect, error) {
+func getConnectResult(decoder *amf.AMF0Decoder) (*Connect, error) {
 	connect := new(Connect)
 	connect.CommandName = CONNECT
 
@@ -78,7 +80,7 @@ func getConnectResult(decoder *AMF0Decoder) (*Connect, error) {
 		return nil, err
 	}
 
-	commObj, ok := commandObject.(Object)
+	commObj, ok := commandObject.(amf.Object)
 
 	if !ok {
 		return nil, errors.New("commandObject is not of type Object")
@@ -92,7 +94,7 @@ func getConnectResult(decoder *AMF0Decoder) (*Connect, error) {
 		return nil, err
 	}
 
-	optUA, ok := optionalUserAgreements.(Object)
+	optUA, ok := optionalUserAgreements.(amf.Object)
 
 	if !ok {
 		connect.OptionaUserArguments = nil
@@ -103,7 +105,7 @@ func getConnectResult(decoder *AMF0Decoder) (*Connect, error) {
 	return connect, nil
 }
 
-func getCallResponseResult(decoder *AMF0Decoder, value interface{}) (*CallResponse, error) {
+func getCallResponseResult(decoder *amf.AMF0Decoder, value interface{}) (*CallResponse, error) {
 	precedureName, ok := value.(string)
 
 	if !ok {
@@ -133,7 +135,7 @@ func getCallResponseResult(decoder *AMF0Decoder, value interface{}) (*CallRespon
 		return nil, err
 	}
 
-	commObj, ok := commandObject.(Object)
+	commObj, ok := commandObject.(amf.Object)
 
 	if !ok {
 		return nil, errors.New("commandObject is not of type Object")
@@ -147,7 +149,7 @@ func getCallResponseResult(decoder *AMF0Decoder, value interface{}) (*CallRespon
 		return nil, err
 	}
 
-	res, ok := response.(Object)
+	res, ok := response.(amf.Object)
 
 	if !ok {
 		return nil, errors.New("response is not of type Object")
@@ -158,7 +160,7 @@ func getCallResponseResult(decoder *AMF0Decoder, value interface{}) (*CallRespon
 	return call, nil
 }
 
-func getCreateStream(decoder *AMF0Decoder) (*CallResponse, error) {
+func getCreateStream(decoder *amf.AMF0Decoder) (*CallResponse, error) {
 
 	call := new(CallResponse)
 	call.ProcedureName = CREATE_STREAM
@@ -183,7 +185,7 @@ func getCreateStream(decoder *AMF0Decoder) (*CallResponse, error) {
 		return nil, err
 	}
 
-	commObj, ok := commandObject.(Object)
+	commObj, ok := commandObject.(amf.Object)
 
 	if !ok {
 		return nil, errors.New("commandObject is not of type Object")
