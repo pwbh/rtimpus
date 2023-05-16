@@ -96,7 +96,8 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 		}
 	}
 
-	if _, err := e.writer.Write([]byte{AMF0ObjectEndMarker}); err != nil {
+	// As noted in the specification - 0x00 0x00 0x09
+	if _, err := e.writer.Write([]byte{AMF0NumberMarker, AMF0NumberMarker, AMF0ObjectEndMarker}); err != nil {
 		return err
 	}
 
