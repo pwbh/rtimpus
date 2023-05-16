@@ -1,16 +1,14 @@
-package rtimpus
+package amf
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
-
-	"github.com/pwbh/rtimpus/amf"
 )
 
 func TestAMFEncodesMessage(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
-	amf0Encoder := amf.NewAMF0Encoder(buf)
+	amf0Encoder := NewAMF0Encoder(buf)
 	if err := amf0Encoder.Encode("_result"); err != nil {
 		t.Fatalf(`amf0Encoder.Encode("_result") =  %v`, err)
 	}
