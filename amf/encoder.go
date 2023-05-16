@@ -75,6 +75,14 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 			if err := e.encodeString(v); err != nil {
 				return err
 			}
+		case int:
+			if err := e.encodeNumber(float64(v)); err != nil {
+				return err
+			}
+		case float32:
+			if err := e.encodeNumber(float64(v)); err != nil {
+				return err
+			}
 		case float64:
 			if err := e.encodeNumber(v); err != nil {
 				return err

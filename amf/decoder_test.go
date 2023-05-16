@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestAMFEncodesMessage(t *testing.T) {
+func TestAMF0EncoderBasicMessage(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	amf0Encoder := NewAMF0Encoder(buf)
 	if err := amf0Encoder.Encode("_result"); err != nil {
@@ -23,6 +23,22 @@ func TestAMFEncodesMessage(t *testing.T) {
 	}
 	if err := amf0Encoder.Encode(50); err != nil {
 		t.Fatalf(`amf0Encoder.Encode("This is another test") =  %v`, err)
+	}
+	fmt.Println(buf.Bytes())
+}
+
+func TestAMF0EncoderComplexMessage(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	amf0Encoder := NewAMF0Encoder(buf)
+	if err := amf0Encoder.Encode("_result"); err != nil {
+		t.Fatalf(`amf0Encoder.Encode("_result") =  %v`, err)
+	}
+	if err := amf0Encoder.Encode(1); err != nil {
+		t.Fatalf(`amf0Encoder.Encode("_result") =  %v`, err)
+	}
+	complexObject := Object{"version": 3, "something": "whatever string we want", "swVcs": "https://localhost:10000/", "some_else": Object{"test": "test"}}
+	if err := amf0Encoder.Encode(complexObject); err != nil {
+		t.Fatalf(`amf0Encoder.Encode(complexObject) =  %v`, err)
 	}
 	fmt.Println(buf.Bytes())
 }
