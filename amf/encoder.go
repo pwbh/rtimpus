@@ -42,7 +42,7 @@ func (e *AMF0Encoder) encodeArray(ecmaArr ECMAArray) error {
 		return err
 	}
 	for _, v := range ecmaArr {
-		if err := e.encodeString(v.Key); err != nil {
+		if err := e.encodeKey(v.Key); err != nil {
 			return err
 		}
 		if err := e.Encode(v.Value); err != nil {
@@ -62,7 +62,7 @@ func (e *AMF0Encoder) encodeBool(v bool) error {
 	return err
 }
 
-func (e *AMF0Encoder) encodeObjectKey(str string) error {
+func (e *AMF0Encoder) encodeKey(str string) error {
 	length := len(str)
 	buf := make([]byte, 2, length+2)
 	binary.BigEndian.PutUint16(buf[0:], uint16(length))
@@ -77,7 +77,7 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 	}
 
 	for k, v := range obj {
-		if err := e.encodeObjectKey(k); err != nil {
+		if err := e.encodeKey(k); err != nil {
 			return err
 		}
 		switch v := v.(type) {
