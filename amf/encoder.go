@@ -33,19 +33,19 @@ func (e *AMF0Encoder) encodeString(str string) error {
 	return err
 }
 
-func (e *AMF0Encoder) encodeArray(obj Object) error {
-	length := uint32(len(obj))
+func (e *AMF0Encoder) encodeArray(ecmaArr ECMAArray) error {
+	length := uint32(len(ecmaArr))
 	buf := make([]byte, 5)
 	buf[0] = AMF0EcmaArrayMarker
 	binary.BigEndian.PutUint32(buf[1:], length)
 	if _, err := e.writer.Write(buf); err != nil {
 		return err
 	}
-	for k, v := range obj {
-		if err := e.encodeString(k); err != nil {
+	for _, v := range ecmaArr {
+		if err := e.encodeString(v.Key); err != nil {
 			return err
 		}
-		if err := e.Encode(v); err != nil {
+		if err := e.Encode(v.Value); err != nil {
 			return err
 		}
 	}
@@ -105,10 +105,10 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 			if err := e.encodeNumber(v); err != nil {
 				return err
 			}
-		// case []uint32: // Probably will not work correctly yet
-		// 	if err := e.encodeArray(v); err != nil {
-		// 		return err
-		// 	}
+		case ECMAArray:
+			if err := e.encodeArray(v); err != nil {
+				return err
+			}
 		default:
 			return errors.New("type is not recognized")
 		}
@@ -148,10 +148,10 @@ func (e *AMF0Encoder) Encode(value interface{}) error {
 		if err := e.encodeNumber(v); err != nil {
 			return err
 		}
-	// case []uint32: // Probably will not work correctly yet
-	// 	if err := e.encodeArray(v); err != nil {
-	// 		return err
-	// 	}
+	case ECMAArray:
+		if err := e.encodeArray(v); err != nil {
+			return err
+		}
 	default:
 		return errors.New("type is not recognized")
 	}
