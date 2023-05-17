@@ -33,12 +33,21 @@ func (e *AMF0Encoder) encodeString(str string) error {
 	return err
 }
 
-func (e *AMF0Encoder) encodeArray(arr []uint32) error {
-	length := len(arr) * 4
-	buf := make([]byte, length+1)
+func (e *AMF0Encoder) encodeArray(obj Object) error {
+	length := uint32(len(obj))
+	buf := make([]byte, 5)
 	buf[0] = AMF0EcmaArrayMarker
-	for i, e := range arr {
-		binary.BigEndian.AppendUint32(buf[i*4+1:i*4+5], e)
+	binary.BigEndian.PutUint32(buf[1:], length)
+	if _, err := e.writer.Write(buf); err != nil {
+		return err
+	}
+	for k, v := range obj {
+		if err := e.encodeString(k); err != nil {
+			return err
+		}
+		if err := e.Encode(v); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -53,13 +62,22 @@ func (e *AMF0Encoder) encodeBool(v bool) error {
 	return err
 }
 
+func (e *AMF0Encoder) encodeObjectKey(str string) error {
+	length := len(str)
+	buf := make([]byte, 2, length+2)
+	binary.BigEndian.PutUint16(buf[0:], uint16(length))
+	buf = append(buf, str...)
+	_, err := e.writer.Write(buf)
+	return err
+}
+
 func (e *AMF0Encoder) encodeObject(obj Object) error {
 	if _, err := e.writer.Write([]byte{AMF0ObjectMarker}); err != nil {
 		return err
 	}
 
 	for k, v := range obj {
-		if err := e.encodeString(k); err != nil {
+		if err := e.encodeObjectKey(k); err != nil {
 			return err
 		}
 		switch v := v.(type) {
@@ -87,10 +105,10 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 			if err := e.encodeNumber(v); err != nil {
 				return err
 			}
-		case []uint32: // Probably will not work correctly yet
-			if err := e.encodeArray(v); err != nil {
-				return err
-			}
+		// case []uint32: // Probably will not work correctly yet
+		// 	if err := e.encodeArray(v); err != nil {
+		// 		return err
+		// 	}
 		default:
 			return errors.New("type is not recognized")
 		}
@@ -130,10 +148,10 @@ func (e *AMF0Encoder) Encode(value interface{}) error {
 		if err := e.encodeNumber(v); err != nil {
 			return err
 		}
-	case []uint32: // Probably will not work correctly yet
-		if err := e.encodeArray(v); err != nil {
-			return err
-		}
+	// case []uint32: // Probably will not work correctly yet
+	// 	if err := e.encodeArray(v); err != nil {
+	// 		return err
+	// 	}
 	default:
 		return errors.New("type is not recognized")
 	}

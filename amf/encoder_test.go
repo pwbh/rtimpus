@@ -2,6 +2,7 @@ package amf
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -31,11 +32,14 @@ func TestAMF0EncoderComplexMessage(t *testing.T) {
 	if err := amf0Encoder.Encode("_result"); err != nil {
 		t.Fatalf(`amf0Encoder.Encode("_result") =  %v`, err)
 	}
+	fmt.Println(buf.Bytes())
 	if err := amf0Encoder.Encode(1); err != nil {
 		t.Fatalf(`amf0Encoder.Encode(1) =  %v`, err)
 	}
-	complexObject := Object{"version": 3, "something": "whatever string we want", "swVcs": "https://localhost:10000/", "some_else": Object{"test": "test"}}
+	fmt.Println(buf.Bytes())
+	complexObject := Object{"version": 3, "something": "whatever string we want", "swVcs": "https://localhost:10000/", "some_else": Object{"test": "test"}, "sometrhing": 2.0}
 	if err := amf0Encoder.Encode(complexObject); err != nil {
 		t.Fatalf(`amf0Encoder.Encode(complexObject) =  %v`, err)
 	}
+	fmt.Println(buf.Bytes())
 }
