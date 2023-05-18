@@ -2,7 +2,6 @@ package amf
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 )
 
@@ -32,16 +31,38 @@ func TestAMF0EncoderComplexMessage(t *testing.T) {
 	if err := amf0Encoder.Encode("_result"); err != nil {
 		t.Fatalf(`amf0Encoder.Encode("_result") =  %v`, err)
 	}
-	fmt.Println(buf.Bytes())
 	if err := amf0Encoder.Encode(1); err != nil {
 		t.Fatalf(`amf0Encoder.Encode(1) =  %v`, err)
 	}
-	fmt.Println(buf.Bytes())
 	complexObject := Object{"version": 3, "something": "whatever string we want", "swVcs": "https://localhost:10000/", "some_else": Object{"test": "test"}, "sometrhing": 2.0}
 	if err := amf0Encoder.Encode(complexObject); err != nil {
 		t.Fatalf(`amf0Encoder.Encode(complexObject) =  %v`, err)
 	}
-	fmt.Println(buf.Bytes())
+}
+
+func TestAMF0EncoderEncodeECMAArray(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	amf0Encoder := NewAMF0Encoder(buf)
+	if err := amf0Encoder.Encode("_result"); err != nil {
+		t.Fatalf(`amf0Encoder.Encode("_result") =  %v`, err)
+	}
+	if err := amf0Encoder.Encode(1); err != nil {
+		t.Fatalf(`amf0Encoder.Encode(1) =  %v`, err)
+	}
+	complexObject := Object{"version": 3, "something": "whatever string we want", "swVcs": "https://localhost:10000/", "some_else": Object{"test": "test"}, "sometrhing": 2.0}
+	if err := amf0Encoder.Encode(complexObject); err != nil {
+		t.Fatalf(`amf0Encoder.Encode(complexObject) =  %v`, err)
+	}
+	ecmaArr := make(ECMAArray, 0, 5)
+	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Hello", Value: "World"})
+	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Version", Value: 2.1})
+	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "url", Value: "https://localhost:10000/"})
+	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Complex", Value: ECMAArray{ECMAArrayItem{Key: "Test", Value: "Test"}}})
+	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Hello2", Value: "World2"})
+	if err := amf0Encoder.Encode(ecmaArr); err != nil {
+		t.Fatalf(`amf0Encoder.Encode(ecmaArr) =  %v`, err)
+	}
+
 }
 
 func BenchmarkAMF0EncoderComplexType(b *testing.B) {
