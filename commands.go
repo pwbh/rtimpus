@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/pwbh/rtimpus/amf"
+	"github.com/pwbh/rtimpus/utils"
 )
 
 type Connect struct {
@@ -197,6 +199,26 @@ func getCreateStream(decoder *amf.AMF0Decoder) (*CallResponse, error) {
 	return call, nil
 }
 
+// RTMP Chunk Stream uses message type IDs 1, 2, 3, 5, and 6 for protocol control messages.
+// These messages contain information needed by the RTMP Chunk Stream protocol.
+
+// These protocol control messages MUST have message stream ID 0 (known as the control stream)
+// and be sent in chunk stream ID 2. Protocol control messages take effect as soon as they are received;
+// their timestamps are ignored.
+
+func createProtocolMessageHeader(messageType byte, payloadLength uint32) ([]byte, error) {
+	if messageType > 6 {
+		return nil, errors.New("valid messageType ids 1-6, received >6")
+	}
+	buf := make([]byte, 12)
+	buf[0] = 2                                                        // Chunk Stream ID
+	buf[1] = messageType                                              // Message Type
+	utils.PutUint24(buf[2:], payloadLength)                           // Payload length
+	binary.BigEndian.AppendUint32(buf[5:], uint32(time.Now().Unix())) // Timestamp
+	utils.PutUint24(buf[9:], 0)                                       // Message Stream ID
+	return buf, nil
+}
+
 // Protocol control message 1, Set Chunk Size, is used to notify the peer of a new maximum chunk size.
 // The maximum chunk size defaults to 128 bytes, but the client or the server can change this value, and updates
 // its peer using this message. For example, suppose a client wants to send 131 bytes of audio data and the chunk size is 128.
@@ -205,9 +227,15 @@ func getCreateStream(decoder *amf.AMF0Decoder) (*CallResponse, error) {
 // The maximum chunk size SHOULD be at least 128 bytes, and MUST be at least 1 byte. The maximum chunk size
 // is maintained independently for each direction.
 func SendSetChunkSize(w io.Writer, size uint32) {
-	buf := make([]byte, 4)
-	sendable := size &^ (1 << 0)
-	binary.BigEndian.AppendUint32(buf, sendable)
+	payloadLength := 4
+	header, err := createProtocolMessageHeader(1, uint32(payloadLength))
+	if err != nil {
+		fmt.Printf("header creation for SetChunkSize failed %v\n", header)
+	}
+	headerLength := len(header)
+	buf := make([]byte, 4+headerLength)
+	copy(buf[:headerLength], header)
+	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	w.Write(buf)
 }
 
@@ -221,7 +249,7 @@ func SendAbortMessage(w io.Writer, streamID uint32) {
 	w.Write(buf)
 }
 
-// The client or the server MUST send an acknowledgment to the peer after receiving bytes equal to the window size.
+// Protocol control message 3, Acknowledgement, The client or the server MUST send an acknowledgment to the peer after receiving bytes equal to the window size.
 // The window size is the maximum number of bytes that the sender sends without receiving acknowledgment from the receiver.
 // This message specifies the sequence number, which is the number of the bytes received so far.
 // sequenceNumber field holds the number of bytes received so far.
