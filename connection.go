@@ -29,6 +29,10 @@ func (c *Connection) Process(message []byte) {
 	}
 }
 
+func (c *Connection) Write(b []byte) {
+	c.conn.Write(b)
+}
+
 func (c *Connection) handleChunk(message []byte) {
 	// Exchange of messages happens here.
 	// header := parseHeader(message)
