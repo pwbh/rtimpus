@@ -42,10 +42,10 @@ func PutUint24(buf []byte, v uint32) error {
 		return errors.New("buffer is smaller then 3 byte int")
 	}
 	if v > UINT24_MAX_VALUE {
-		return errors.New("exceeded maximum value for 3 bytes int")
+		return errors.New("exceeded maximum value for uint24")
 	}
-	inner := make([]byte, 4)
-	binary.BigEndian.PutUint32(inner, v)
-	copy(buf, inner[1:])
+	tmp := make([]byte, 4)
+	binary.BigEndian.PutUint32(tmp, v)
+	copy(buf, tmp[1:])
 	return nil
 }

@@ -233,7 +233,7 @@ func SendSetChunkSize(w io.Writer, size uint32) {
 		fmt.Printf("header creation for SetChunkSize failed %v\n", header)
 	}
 	headerLength := len(header)
-	buf := make([]byte, 4+headerLength)
+	buf := make([]byte, payloadLength+headerLength)
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	w.Write(buf)
@@ -244,8 +244,14 @@ func SendSetChunkSize(w io.Writer, size uint32) {
 // this protocol message’s payload. An application may send this message when closing in order to indicate that
 // further processing of the messages is not required.
 func SendAbortMessage(w io.Writer, streamID uint32) {
-	buf := make([]byte, 4)
-	binary.BigEndian.AppendUint32(buf, streamID)
+	payloadLength := 4
+	header, err := createProtocolMessageHeader(2, uint32(payloadLength))
+	if err != nil {
+		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+	}
+	headerLength := len(header)
+	buf := make([]byte, headerLength+payloadLength)
+	binary.BigEndian.AppendUint32(buf[headerLength:], streamID)
 	w.Write(buf)
 }
 
@@ -254,8 +260,14 @@ func SendAbortMessage(w io.Writer, streamID uint32) {
 // This message specifies the sequence number, which is the number of the bytes received so far.
 // sequenceNumber field holds the number of bytes received so far.
 func SendAcknowledgement(w io.Writer, sequenceNumber uint32) {
-	buf := make([]byte, 4)
-	binary.BigEndian.AppendUint32(buf, sequenceNumber)
+	payloadLength := 4
+	header, err := createProtocolMessageHeader(3, uint32(payloadLength))
+	if err != nil {
+		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+	}
+	headerLength := len(header)
+	buf := make([]byte, headerLength+payloadLength)
+	binary.BigEndian.AppendUint32(buf[headerLength:], sequenceNumber)
 	w.Write(buf)
 }
 
@@ -264,8 +276,14 @@ func SendAcknowledgement(w io.Writer, sequenceNumber uint32) {
 // The receiving peer MUST send an Acknowledgement (Section 5.4.3) after receiving the indicated
 // number of bytes since the last Acknowledgement was sent, or from the beginning of the session if no Acknowledgement has yet been sent.
 func SendWindowAcknowledgementSize(w io.Writer, size uint32) {
-	buf := make([]byte, 4)
-	binary.BigEndian.AppendUint32(buf, size)
+	payloadLength := 4
+	header, err := createProtocolMessageHeader(5, uint32(payloadLength))
+	if err != nil {
+		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+	}
+	headerLength := len(header)
+	buf := make([]byte, headerLength+payloadLength)
+	binary.BigEndian.AppendUint32(buf[headerLength:], size)
 	w.Write(buf)
 }
 
@@ -282,9 +300,14 @@ func SendSetPeerBandwith(w io.Writer, size uint32, limit byte) {
 	if limit > 2 {
 		fmt.Printf("given limit is not support, max limit is 2, received %d\n", limit)
 	}
-
-	buf := make([]byte, 5)
-	binary.BigEndian.AppendUint32(buf[:4], size)
-	buf[5] = limit
+	payloadLength := 5
+	header, err := createProtocolMessageHeader(6, uint32(payloadLength))
+	if err != nil {
+		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+	}
+	headerLength := len(header)
+	buf := make([]byte, headerLength+payloadLength)
+	binary.BigEndian.AppendUint32(buf[headerLength:], size)
+	buf[headerLength+payloadLength-1] = limit
 	w.Write(buf)
 }
