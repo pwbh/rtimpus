@@ -37,8 +37,8 @@ const (
 	CREATE_STREAM = "createStream"
 )
 
-func UnmarshalCommand(message []byte) (interface{}, error) {
-	buffer := bytes.NewBuffer(message)
+func UnmarshalCommand(chunk *Chunk) (interface{}, error) {
+	buffer := bytes.NewBuffer(chunk.payload.data)
 	decoder := amf.NewAMF0Decoder(buffer)
 
 	value, err := decoder.Decode()
