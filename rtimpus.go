@@ -43,8 +43,9 @@ func LoopConnections(listener *Listener) {
 
 func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 	connection := new(Connection)
-	connection.conn = tcpConn
+	connection.Conn = tcpConn
 	connection.Phase = Uninitialized
+	connection.ChunkSize = 128
 
 	go func() {
 		buf := make([]byte, 0, 4096)

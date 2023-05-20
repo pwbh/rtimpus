@@ -300,7 +300,7 @@ func SendWindowAcknowledgementSize(w io.Writer, size uint32) {
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	w.Write(buf)
-	fmt.Println(buf)
+
 }
 
 // Protocol contro message 6, The client or the server sends this message to limit the output bandwidth of its peer.
@@ -327,5 +327,5 @@ func SendSetPeerBandwith(w io.Writer, size uint32, limit byte) {
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	buf[headerLength+payloadLength-1] = limit
 	w.Write(buf)
-	fmt.Println(buf)
+
 }

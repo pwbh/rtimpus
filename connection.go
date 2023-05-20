@@ -12,10 +12,11 @@ import (
 const HANDSHAKE_PACKET_SIZE = int(1536)
 
 type Connection struct {
-	Phase Phase
-	Err   error
-	conn  *net.TCPConn
-	Hash  string
+	Phase     Phase
+	Err       error
+	Conn      *net.TCPConn
+	Hash      string
+	ChunkSize uint32
 }
 
 func (c *Connection) Process(message []byte) {
@@ -30,7 +31,7 @@ func (c *Connection) Process(message []byte) {
 }
 
 func (c *Connection) Write(b []byte) (int, error) {
-	return c.conn.Write(b)
+	return c.Conn.Write(b)
 }
 
 func (c *Connection) handleChunk(message []byte) {
@@ -41,18 +42,21 @@ func (c *Connection) handleChunk(message []byte) {
 
 	for totalByteParsed < len(message) {
 		chunk := parseChunk(message[totalByteParsed:])
+
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
 
-		// Message Type ID 18,20 is Command Message
-		if chunk.header.MessageTypeId == 18 || chunk.header.MessageTypeId == 20 {
+		switch chunk.header.MessageTypeId {
+		case 1:
+			c.ChunkSize = binary.BigEndian.Uint32(chunk.payload.data)
+		case 18, 20: // Message Type ID 18,20 is Command Message
 			command, err := UnmarshalCommand(chunk)
-
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-
 			c.handleCommand(command, chunk)
+		default:
+			fmt.Printf("Message ID: %d is not handled yet\n", chunk.header.MessageTypeId)
 		}
 
 		totalByteParsed += chunk.Size()
@@ -83,7 +87,7 @@ func (c *Connection) processAckSent(message []byte) {
 		c.Phase = HandshakeDone
 		c.handleChunk(message[HANDSHAKE_PACKET_SIZE:])
 	} else {
-		c.conn.Close()
+		c.Conn.Close()
 	}
 }
 
@@ -91,7 +95,7 @@ func (c *Connection) processUninitialized(message []byte) {
 	if isVersionSupported(message) {
 		// S0
 		s0 := []byte{SUPPORTED_PROTOCOL_VERSION}
-		c.conn.Write(s0)
+		c.Conn.Write(s0)
 
 		// S1
 		s1 := make([]byte, 4, HANDSHAKE_PACKET_SIZE)
@@ -100,7 +104,7 @@ func (c *Connection) processUninitialized(message []byte) {
 		s1 = append(s1, []byte{0, 0, 0, 0}...)
 		hash := utils.RandString(HANDSHAKE_PACKET_SIZE - 8)
 		s1 = append(s1, hash...)
-		c.conn.Write(s1)
+		c.Conn.Write(s1)
 
 		c.Phase = VersionSent
 		c.Hash = hash
@@ -114,11 +118,11 @@ func (c *Connection) processUninitialized(message []byte) {
 		binary.BigEndian.PutUint32(s2[4:], 0)
 		c1Hash := c1[8:]
 		s2 = append(s2, c1Hash...)
-		c.conn.Write(s2)
+		c.Conn.Write(s2)
 
 		c.Phase = AckSent
 	} else {
-		c.conn.Close()
+		c.Conn.Close()
 	}
 
 }
