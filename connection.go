@@ -29,8 +29,8 @@ func (c *Connection) Process(message []byte) {
 	}
 }
 
-func (c *Connection) Write(b []byte) {
-	c.conn.Write(b)
+func (c *Connection) Write(b []byte) (int, error) {
+	return c.conn.Write(b)
 }
 
 func (c *Connection) handleChunk(message []byte) {
@@ -42,7 +42,6 @@ func (c *Connection) handleChunk(message []byte) {
 	for totalByteParsed < len(message) {
 		chunk := parseChunk(message[totalByteParsed:])
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
-		fmt.Println(chunk.payload.data)
 
 		// Message Type ID 18,20 is Command Message
 		if chunk.header.MessageTypeId == 18 || chunk.header.MessageTypeId == 20 {
@@ -50,19 +49,30 @@ func (c *Connection) handleChunk(message []byte) {
 
 			if err != nil {
 				fmt.Println(err)
-				return
+				continue
 			}
 
-			fmt.Printf("%+v\n", command)
+			c.handleCommand(command, chunk)
 		}
 
-		totalByteParsed += int(getChunkHeaderLength(chunk.header) + chunk.header.MessageLength)
+		totalByteParsed += chunk.Size()
 	}
 
 	// chunk := parseChunk(message)
 	// fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
 	// fmt.Printf("New chunk size: %d (%d)\n", chunk.payload.data, binary.BigEndian.Uint32(chunk.payload.data))
 	// fmt.Println(message)
+}
+
+func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
+	switch command.(type) {
+	case *Connect:
+		SendWindowAcknowledgementSize(c, uint32(chunk.Size()))
+		SendSetPeerBandwith(c, 4096, 0)
+
+	default:
+		fmt.Printf("unrecognized command received, %v\n", command)
+	}
 }
 
 func (c *Connection) processAckSent(message []byte) {

@@ -27,6 +27,10 @@ type Chunk struct {
 	payload *Payload
 }
 
+func (c *Chunk) Size() int {
+	return int(getChunkHeaderLength(c.header) + c.header.MessageLength)
+}
+
 func parseChunk(message []byte) *Chunk {
 	header := parseHeader(message)
 

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/pwbh/rtimpus/amf"
 	"github.com/pwbh/rtimpus/utils"
@@ -206,16 +205,29 @@ func getCreateStream(decoder *amf.AMF0Decoder) (*CallResponse, error) {
 // and be sent in chunk stream ID 2. Protocol control messages take effect as soon as they are received;
 // their timestamps are ignored.
 
+// func createProtocolMessageHeader(messageType byte, payloadLength uint32) ([]byte, error) {
+// 	if messageType > 6 {
+// 		return nil, errors.New("valid messageType ids 1-6, received >6")
+// 	}
+// 	buf := make([]byte, 12)
+// 	buf[0] = 2                              // Chunk Stream ID
+// 	buf[1] = messageType                    // Message Type
+// 	utils.PutUint24(buf[2:], payloadLength) // Payload length
+// 	binary.BigEndian.PutUint32(buf[5:], 0)  // Timestamp is ignored
+// 	utils.PutUint24(buf[9:], 0)             // Message Stream ID
+// 	return buf, nil
+// }
+
 func createProtocolMessageHeader(messageType byte, payloadLength uint32) ([]byte, error) {
 	if messageType > 6 {
 		return nil, errors.New("valid messageType ids 1-6, received >6")
 	}
 	buf := make([]byte, 12)
-	buf[0] = 2                                                        // Chunk Stream ID
-	buf[1] = messageType                                              // Message Type
-	utils.PutUint24(buf[2:], payloadLength)                           // Payload length
-	binary.BigEndian.AppendUint32(buf[5:], uint32(time.Now().Unix())) // Timestamp
-	utils.PutUint24(buf[9:], 0)                                       // Message Stream ID
+	buf[0] = 2                              // Chunk Stream ID
+	utils.PutUint24(buf[1:], 0)             // Timestamp is ignored
+	utils.PutUint24(buf[4:], payloadLength) // Payload length
+	buf[7] = messageType                    // Message Type
+	binary.BigEndian.PutUint32(buf[8:], 0)  // Message Stream ID
 	return buf, nil
 }
 
@@ -251,7 +263,8 @@ func SendAbortMessage(w io.Writer, streamID uint32) {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
-	binary.BigEndian.AppendUint32(buf[headerLength:], streamID)
+	copy(buf[:headerLength], header)
+	binary.BigEndian.PutUint32(buf[headerLength:], streamID)
 	w.Write(buf)
 }
 
@@ -267,11 +280,12 @@ func SendAcknowledgement(w io.Writer, sequenceNumber uint32) {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
-	binary.BigEndian.AppendUint32(buf[headerLength:], sequenceNumber)
+	copy(buf[:headerLength], header)
+	binary.BigEndian.PutUint32(buf[headerLength:], sequenceNumber)
 	w.Write(buf)
 }
 
-// The client or the server sends this message to inform the peer of the window size to use between sending acknowledgments.
+// Protocol control message 5, The client or the server sends this message to inform the peer of the window size to use between sending acknowledgments.
 // The sender expects acknowledgment from its peer after the sender sends window size bytes.
 // The receiving peer MUST send an Acknowledgement (Section 5.4.3) after receiving the indicated
 // number of bytes since the last Acknowledgement was sent, or from the beginning of the session if no Acknowledgement has yet been sent.
@@ -279,15 +293,17 @@ func SendWindowAcknowledgementSize(w io.Writer, size uint32) {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(5, uint32(payloadLength))
 	if err != nil {
-		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+		fmt.Printf("header creation for WindowAcknowledgementSize failed %v\n", header)
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
-	binary.BigEndian.AppendUint32(buf[headerLength:], size)
+	copy(buf[:headerLength], header)
+	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	w.Write(buf)
+	fmt.Println(buf)
 }
 
-// The client or the server sends this message to limit the output bandwidth of its peer.
+// Protocol contro message 6, The client or the server sends this message to limit the output bandwidth of its peer.
 // The peer receiving this message limits its output bandwidth by limiting the amount of sent but unacknowledged
 // data to the window size indicated in this message. The peer receiving this message SHOULD
 // respond with a Window Acknowledgement Size message if the window size is different from the last
@@ -303,11 +319,13 @@ func SendSetPeerBandwith(w io.Writer, size uint32, limit byte) {
 	payloadLength := 5
 	header, err := createProtocolMessageHeader(6, uint32(payloadLength))
 	if err != nil {
-		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+		fmt.Printf("header creation for SetPeerBandwith failed %v\n", header)
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
-	binary.BigEndian.AppendUint32(buf[headerLength:], size)
+	copy(buf[:headerLength], header)
+	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	buf[headerLength+payloadLength-1] = limit
 	w.Write(buf)
+	fmt.Println(buf)
 }
