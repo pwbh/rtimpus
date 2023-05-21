@@ -303,6 +303,7 @@ func SendWindowAcknowledgementSize(c *Connection, size uint32) error {
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	_, wErr := c.Write(buf)
+	c.WindowSize = size
 	return wErr
 }
 
@@ -333,6 +334,25 @@ func SendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 	if wErr != nil {
 		return wErr
 	}
-	c.ChunkSize = size
 	return nil
+}
+
+func SendConnectResult(c *Connection, commandObject amf.Object) error {
+	buf := bytes.NewBuffer([]byte{})
+	encoder := amf.NewAMF0Encoder(buf)
+	if err := encoder.Encode("_result"); err != nil {
+		return err
+	}
+	if err := encoder.Encode(1); err != nil {
+		return err
+	}
+	if err := encoder.Encode(commandObject); err != nil {
+		return err
+	}
+	information := make(amf.Object)
+	if err := encoder.Encode(information); err != nil {
+		return err
+	}
+	_, err := c.Write(buf.Bytes())
+	return err
 }

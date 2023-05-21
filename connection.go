@@ -52,7 +52,7 @@ func (c *Connection) handleChunk(message []byte) {
 		case 1:
 			c.ChunkSize = binary.BigEndian.Uint32(chunk.payload.data)
 		case 3:
-			fmt.Printf("client informs of %d bytes received so far", binary.BigEndian.Uint32(chunk.payload.data))
+			fmt.Printf("client informs %d bytes received so far\n", binary.BigEndian.Uint32(chunk.payload.data))
 		case 18, 20: // Message Type ID 18,20 is Command Message
 			command, err := UnmarshalCommand(chunk)
 			if err != nil {
@@ -87,15 +87,18 @@ func (c *Connection) checkAcknowledgement() error {
 }
 
 func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
-	switch command.(type) {
+	switch v := command.(type) {
 	case *Connect:
-		if err := SendWindowAcknowledgementSize(c, uint32(chunk.Size())); err != nil {
+		if err := SendWindowAcknowledgementSize(c, 4096); err != nil {
 			fmt.Printf("error on SendWindowAcknowledgementSize: %v\n", err)
 		}
-		if err := SendSetPeerBandwith(c, 4096, 0); err != nil {
+		if err := SendSetPeerBandwith(c, 1024, 0); err != nil {
 			fmt.Printf("error on SendSetPeerBandwith: %v\n", err)
 		}
 		if err := SendStreamBeginEvent(c, 4); err != nil {
+			fmt.Printf("error on SendStreamBeginEvent: %v\n", err)
+		}
+		if err := SendConnectResult(c, v.CommandObject); err != nil {
 			fmt.Printf("error on SendStreamBeginEvent: %v\n", err)
 		}
 	default:

@@ -122,6 +122,11 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 	return nil
 }
 
+func (e *AMF0Encoder) encodeNil() error {
+	_, err := e.writer.Write([]byte{AMF0NullMarker})
+	return err
+}
+
 func (e *AMF0Encoder) Encode(value interface{}) error {
 	switch v := value.(type) {
 	case bool:
@@ -150,6 +155,10 @@ func (e *AMF0Encoder) Encode(value interface{}) error {
 		}
 	case ECMAArray:
 		if err := e.encodeArray(v); err != nil {
+			return err
+		}
+	case nil:
+		if err := e.encodeNil(); err != nil {
 			return err
 		}
 	default:
