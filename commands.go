@@ -238,7 +238,7 @@ func createProtocolMessageHeader(messageType byte, payloadLength uint32) ([]byte
 // then send the audio data in a single chunk.
 // The maximum chunk size SHOULD be at least 128 bytes, and MUST be at least 1 byte. The maximum chunk size
 // is maintained independently for each direction.
-func SendSetChunkSize(c *Connection, size uint32) error {
+func sendSetChunkSize(c *Connection, size uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(1, uint32(payloadLength))
 	if err != nil {
@@ -256,7 +256,7 @@ func SendSetChunkSize(c *Connection, size uint32) error {
 // then to discard the partially received message over a chunk stream. The peer receives the chunk stream ID as
 // this protocol message’s payload. An application may send this message when closing in order to indicate that
 // further processing of the messages is not required.
-func SendAbortMessage(c *Connection, streamID uint32) error {
+func sendAbortMessage(c *Connection, streamID uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(2, uint32(payloadLength))
 	if err != nil {
@@ -274,7 +274,7 @@ func SendAbortMessage(c *Connection, streamID uint32) error {
 // The window size is the maximum number of bytes that the sender sends without receiving acknowledgment from the receiver.
 // This message specifies the sequence number, which is the number of the bytes received so far.
 // sequenceNumber field holds the number of bytes received so far.
-func SendAcknowledgement(c *Connection, sequenceNumber uint32) error {
+func sendAcknowledgement(c *Connection, sequenceNumber uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(3, uint32(payloadLength))
 	if err != nil {
@@ -292,7 +292,7 @@ func SendAcknowledgement(c *Connection, sequenceNumber uint32) error {
 // The sender expects acknowledgment from its peer after the sender sends window size bytes.
 // The receiving peer MUST send an Acknowledgement (Section 5.4.3) after receiving the indicated
 // number of bytes since the last Acknowledgement was sent, or from the beginning of the session if no Acknowledgement has yet been sent.
-func SendWindowAcknowledgementSize(c *Connection, size uint32) error {
+func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(5, uint32(payloadLength))
 	if err != nil {
@@ -316,7 +316,7 @@ func SendWindowAcknowledgementSize(c *Connection, size uint32) error {
 // 0 - Hard: The peer SHOULD limit its output bandwidth to the indicated window size.
 // 1 - Soft: The peer SHOULD limit its output bandwidth to the the window indicated in this message or the limit already in effect, whichever is smaller.
 // 2 - Dynamic: If the previous Limit Type was Hard, treat this message as though it was marked Hard, otherwise ignore this message.
-func SendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
+func sendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 	if limit > 2 {
 		fmt.Printf("given limit is not support, max limit is 2, received %d\n", limit)
 	}
@@ -337,7 +337,7 @@ func SendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 	return nil
 }
 
-func SendConnectResult(c *Connection, commandObject amf.Object) error {
+func sendConnectResult(c *Connection) error {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := amf.NewAMF0Encoder(buf)
 	if err := encoder.Encode("_result"); err != nil {
@@ -346,13 +346,27 @@ func SendConnectResult(c *Connection, commandObject amf.Object) error {
 	if err := encoder.Encode(1); err != nil {
 		return err
 	}
-	if err := encoder.Encode(commandObject); err != nil {
+	properties := getServerProperties()
+	if err := encoder.Encode(properties); err != nil {
 		return err
 	}
-	information := make(amf.Object)
+	information := getServerInformation()
 	if err := encoder.Encode(information); err != nil {
 		return err
 	}
 	_, err := c.Write(buf.Bytes())
 	return err
+}
+
+func getServerProperties() amf.Object {
+	properties := make(amf.Object)
+	return properties
+}
+
+func getServerInformation() amf.Object {
+	information := make(amf.Object)
+	information["code"] = "NetConnection.Connect.Success"
+	information["description"] = "Connection to the RTMP server was successful."
+	information["objectEncoding"] = 0
+	return information
 }

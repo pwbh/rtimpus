@@ -9,7 +9,7 @@ import (
 // The server sends this event to notify the client that a stream has become functional and can be used for communication.
 // By default, this event is sent on ID 0 after the application connect command is successfully received from the client.
 // The event data is 4-byte and represents the stream ID of the stream that became functional.
-func SendStreamBeginEvent(w io.Writer, streamID uint32) error {
+func sendStreamBeginEvent(w io.Writer, streamID uint32) error {
 	payloadLength := 6
 	header, err := createProtocolMessageHeader(4, uint32(payloadLength))
 	if err != nil {
@@ -26,7 +26,7 @@ func SendStreamBeginEvent(w io.Writer, streamID uint32) error {
 // The server sends this event to notify the client that the playback of data is over as requested on this stream.
 // No more data is sent without issuing additional commands. The client discards the messages received for the stream.
 // The 4 bytes of event data represent the ID of the stream on which playback has ended.
-func SendStreamEOFEvent(w io.Writer, streamID uint32) error {
+func sendStreamEOFEvent(w io.Writer, streamID uint32) error {
 	payloadLength := 6
 	header, err := createProtocolMessageHeader(4, uint32(payloadLength))
 	if err != nil {
@@ -43,7 +43,7 @@ func SendStreamEOFEvent(w io.Writer, streamID uint32) error {
 // The server sends this event to notify the client that there is no more data on the stream.
 // If the server does not detect any message for a time period, it can notify the subscribed clients that the stream is dry.
 // The 4 bytes of event data represent the stream ID of the dry stream.
-func SendStreamDryEvent(w io.Writer, streamID uint32) error {
+func sendStreamDryEvent(w io.Writer, streamID uint32) error {
 	payloadLength := 6
 	header, err := createProtocolMessageHeader(4, uint32(payloadLength))
 	if err != nil {
@@ -60,7 +60,7 @@ func SendStreamDryEvent(w io.Writer, streamID uint32) error {
 // The client sends this event to inform the server of the buffer size (in milliseconds) that is used to buffer any data coming over a stream.
 // This event is sent before the server starts processing the stream.
 // The first 4 bytes of the event data represent the stream ID and the next 4 bytes represent the buffer length, in milliseconds.
-func SendBufferLengthEvent(w io.Writer, streamID uint32, bufferLength uint32) error {
+func sendBufferLengthEvent(w io.Writer, streamID uint32, bufferLength uint32) error {
 	payloadLength := 10
 	header, err := createProtocolMessageHeader(4, uint32(payloadLength))
 	if err != nil {
@@ -77,7 +77,7 @@ func SendBufferLengthEvent(w io.Writer, streamID uint32, bufferLength uint32) er
 
 // The server sends this event to notify the client that the stream is a recorded stream.
 // The 4 bytes event data represent the stream ID of the recorded stream.
-func SendStreamlsRecordedEvent(w io.Writer, streamID uint32) error {
+func sendStreamlsRecordedEvent(w io.Writer, streamID uint32) error {
 	payloadLength := 6
 	header, err := createProtocolMessageHeader(4, uint32(payloadLength))
 	if err != nil {
@@ -94,7 +94,7 @@ func SendStreamlsRecordedEvent(w io.Writer, streamID uint32) error {
 // The server sends this event to test whether the client is reachable.
 // Event data is a 4-byte timestamp, representing the local server time when the server dispatched the command.
 // The client responds with PingResponse on receiving MsgPingRequest.
-func SendPingRequestEvent(w io.Writer) error {
+func sendPingRequestEvent(w io.Writer) error {
 	payloadLength := 6
 	header, err := createProtocolMessageHeader(4, uint32(payloadLength))
 	if err != nil {
@@ -110,7 +110,7 @@ func SendPingRequestEvent(w io.Writer) error {
 
 // The client sends this event to the server in response to the ping request.
 // The event data is a 4-byte timestamp, which was received with the PingRequest request.
-func SendPingResponseEvent(w io.Writer, timestamp uint32) error {
+func sendPingResponseEvent(w io.Writer, timestamp uint32) error {
 	payloadLength := 6
 	header, err := createProtocolMessageHeader(4, uint32(payloadLength))
 	if err != nil {

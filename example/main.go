@@ -17,4 +17,5 @@ func main() {
 	fmt.Printf("Listening for RTMP connections on %s\n", listener.Addr())
 	defer listener.Close()
 	rtimpus.LoopConnections(listener)
+
 }

@@ -77,7 +77,7 @@ func (c *Connection) checkAcknowledgement() error {
 	if c.BytesRecievedNoAck >= c.ChunkSize {
 		diff := c.BytesRecievedNoAck - c.ChunkSize
 		sequenceNumber := c.BytesRecievedNoAck - diff
-		err := SendAcknowledgement(c, sequenceNumber)
+		err := sendAcknowledgement(c, sequenceNumber)
 		if err != nil {
 			return err
 		}
@@ -87,18 +87,18 @@ func (c *Connection) checkAcknowledgement() error {
 }
 
 func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
-	switch v := command.(type) {
+	switch command.(type) {
 	case *Connect:
-		if err := SendWindowAcknowledgementSize(c, 4096); err != nil {
+		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
 			fmt.Printf("error on SendWindowAcknowledgementSize: %v\n", err)
 		}
-		if err := SendSetPeerBandwith(c, 1024, 0); err != nil {
+		if err := sendSetPeerBandwith(c, 1024, 0); err != nil {
 			fmt.Printf("error on SendSetPeerBandwith: %v\n", err)
 		}
-		if err := SendStreamBeginEvent(c, 4); err != nil {
+		if err := sendStreamBeginEvent(c, 4); err != nil {
 			fmt.Printf("error on SendStreamBeginEvent: %v\n", err)
 		}
-		if err := SendConnectResult(c, v.CommandObject); err != nil {
+		if err := sendConnectResult(c); err != nil {
 			fmt.Printf("error on SendStreamBeginEvent: %v\n", err)
 		}
 	default:
