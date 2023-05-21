@@ -27,12 +27,12 @@ type Chunk struct {
 	payload *Payload
 }
 
-func (c *Chunk) Size() int {
-	return int(getChunkHeaderLength(c.header) + c.header.MessageLength)
+func (c *Chunk) Size() uint32 {
+	return getChunkHeaderLength(c.header) + c.header.MessageLength
 }
 
-func parseChunk(message []byte) *Chunk {
-	header := parseHeader(message)
+func parseChunk(c *Connection, message []byte) *Chunk {
+	header := parseHeader(c, message)
 
 	chunkHeaderLength := getChunkHeaderLength(header)
 
@@ -42,7 +42,7 @@ func parseChunk(message []byte) *Chunk {
 	}
 }
 
-func parseHeader(message []byte) *Header {
+func parseHeader(c *Connection, message []byte) *Header {
 	basicHeader := parseBasicHeader(message)
 
 	switch basicHeader.Type {
@@ -51,6 +51,9 @@ func parseHeader(message []byte) *Header {
 		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
 		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
 		messageStreamId := binary.BigEndian.Uint32([]byte{message[basicHeader.Length+7], message[basicHeader.Length+8], message[basicHeader.Length+9], message[basicHeader.Length+10]})
+
+		c.LastMessageStreamID = messageStreamId
+		c.LastMessageLength = messageLength
 
 		return &Header{
 			BasicHeader:     basicHeader,
@@ -64,18 +67,23 @@ func parseHeader(message []byte) *Header {
 		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
 		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
 
+		c.LastMessageLength = messageLength
+
 		return &Header{
-			BasicHeader:   basicHeader,
-			Timestamp:     timestampDelta,
-			MessageLength: messageLength,
-			MessageTypeId: messageTypeId,
+			BasicHeader:     basicHeader,
+			Timestamp:       timestampDelta,
+			MessageLength:   messageLength,
+			MessageTypeId:   messageTypeId,
+			MessageStreamId: c.LastMessageStreamID,
 		}
 	case 2:
 		timestampDelta := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
 
 		return &Header{
-			BasicHeader: basicHeader,
-			Timestamp:   timestampDelta,
+			BasicHeader:     basicHeader,
+			Timestamp:       timestampDelta,
+			MessageLength:   c.LastMessageLength,
+			MessageStreamId: c.LastMessageStreamID,
 		}
 
 	default:

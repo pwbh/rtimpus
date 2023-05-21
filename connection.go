@@ -12,11 +12,15 @@ import (
 const HANDSHAKE_PACKET_SIZE = int(1536)
 
 type Connection struct {
-	Phase     Phase
-	Err       error
-	Conn      *net.TCPConn
-	Hash      string
-	ChunkSize uint32
+	Phase               Phase
+	Err                 error
+	Conn                *net.TCPConn
+	Hash                string
+	ChunkSize           uint32
+	WindowSize          uint32
+	BytesRecievedNoAck  uint32
+	LastMessageStreamID uint32
+	LastMessageLength   uint32
 }
 
 func (c *Connection) Process(message []byte) {
@@ -35,19 +39,20 @@ func (c *Connection) Write(b []byte) (int, error) {
 }
 
 func (c *Connection) handleChunk(message []byte) {
-	// Exchange of messages happens here.
-	// header := parseHeader(message)
 	fmt.Printf("Message len: %d\n", len(message))
-	totalByteParsed := 0
 
-	for totalByteParsed < len(message) {
-		chunk := parseChunk(message[totalByteParsed:])
+	totalBytesReceived := uint32(0)
+
+	for int(totalBytesReceived) < len(message) {
+		chunk := parseChunk(c, message[totalBytesReceived:])
 
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
 
 		switch chunk.header.MessageTypeId {
 		case 1:
 			c.ChunkSize = binary.BigEndian.Uint32(chunk.payload.data)
+		case 3:
+			fmt.Printf("client informs of %d bytes received so far", binary.BigEndian.Uint32(chunk.payload.data))
 		case 18, 20: // Message Type ID 18,20 is Command Message
 			command, err := UnmarshalCommand(chunk)
 			if err != nil {
@@ -59,13 +64,26 @@ func (c *Connection) handleChunk(message []byte) {
 			fmt.Printf("Message ID: %d is not handled yet\n", chunk.header.MessageTypeId)
 		}
 
-		totalByteParsed += chunk.Size()
-	}
+		totalBytesReceived += chunk.Size()
+		c.BytesRecievedNoAck += chunk.Size()
 
-	// chunk := parseChunk(message)
-	// fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.Timestamp, chunk.header.MessageLength, chunk.header.MessageTypeId, chunk.header.MessageStreamId)
-	// fmt.Printf("New chunk size: %d (%d)\n", chunk.payload.data, binary.BigEndian.Uint32(chunk.payload.data))
-	// fmt.Println(message)
+		if err := c.checkAcknowledgement(); err != nil {
+			fmt.Printf("ack failed: %v\n", err)
+		}
+	}
+}
+
+func (c *Connection) checkAcknowledgement() error {
+	if c.BytesRecievedNoAck >= c.ChunkSize {
+		diff := c.BytesRecievedNoAck - c.ChunkSize
+		sequenceNumber := c.BytesRecievedNoAck - diff
+		err := SendAcknowledgement(c, sequenceNumber)
+		if err != nil {
+			return err
+		}
+		c.BytesRecievedNoAck = diff
+	}
+	return nil
 }
 
 func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
@@ -77,7 +95,9 @@ func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
 		if err := SendSetPeerBandwith(c, 4096, 0); err != nil {
 			fmt.Printf("error on SendSetPeerBandwith: %v\n", err)
 		}
-
+		if err := SendStreamBeginEvent(c, 4); err != nil {
+			fmt.Printf("error on SendStreamBeginEvent: %v\n", err)
+		}
 	default:
 		fmt.Printf("unrecognized command received, %v\n", command)
 	}
