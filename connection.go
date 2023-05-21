@@ -71,8 +71,12 @@ func (c *Connection) handleChunk(message []byte) {
 func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
 	switch command.(type) {
 	case *Connect:
-		SendWindowAcknowledgementSize(c, uint32(chunk.Size()))
-		SendSetPeerBandwith(c, 4096, 0)
+		if err := SendWindowAcknowledgementSize(c, uint32(chunk.Size())); err != nil {
+			fmt.Printf("error on SendWindowAcknowledgementSize: %v\n", err)
+		}
+		if err := SendSetPeerBandwith(c, 4096, 0); err != nil {
+			fmt.Printf("error on SendSetPeerBandwith: %v\n", err)
+		}
 
 	default:
 		fmt.Printf("unrecognized command received, %v\n", command)

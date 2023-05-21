@@ -238,69 +238,72 @@ func createProtocolMessageHeader(messageType byte, payloadLength uint32) ([]byte
 // then send the audio data in a single chunk.
 // The maximum chunk size SHOULD be at least 128 bytes, and MUST be at least 1 byte. The maximum chunk size
 // is maintained independently for each direction.
-func SendSetChunkSize(w io.Writer, size uint32) {
+func SendSetChunkSize(w io.Writer, size uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(1, uint32(payloadLength))
 	if err != nil {
-		fmt.Printf("header creation for SetChunkSize failed %v\n", header)
+		return err
 	}
 	headerLength := len(header)
 	buf := make([]byte, payloadLength+headerLength)
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
-	w.Write(buf)
+	_, wErr := w.Write(buf)
+	return wErr
 }
 
 // Protocol control message 2, Abort Message, is used to notify the peer if it is waiting for chunks to complete a message,
 // then to discard the partially received message over a chunk stream. The peer receives the chunk stream ID as
 // this protocol message’s payload. An application may send this message when closing in order to indicate that
 // further processing of the messages is not required.
-func SendAbortMessage(w io.Writer, streamID uint32) {
+func SendAbortMessage(w io.Writer, streamID uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(2, uint32(payloadLength))
 	if err != nil {
-		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+		return err
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], streamID)
-	w.Write(buf)
+	_, wErr := w.Write(buf)
+	return wErr
 }
 
 // Protocol control message 3, Acknowledgement, The client or the server MUST send an acknowledgment to the peer after receiving bytes equal to the window size.
 // The window size is the maximum number of bytes that the sender sends without receiving acknowledgment from the receiver.
 // This message specifies the sequence number, which is the number of the bytes received so far.
 // sequenceNumber field holds the number of bytes received so far.
-func SendAcknowledgement(w io.Writer, sequenceNumber uint32) {
+func SendAcknowledgement(w io.Writer, sequenceNumber uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(3, uint32(payloadLength))
 	if err != nil {
-		fmt.Printf("header creation for AbortMessage failed %v\n", header)
+		return err
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], sequenceNumber)
-	w.Write(buf)
+	_, wErr := w.Write(buf)
+	return wErr
 }
 
 // Protocol control message 5, The client or the server sends this message to inform the peer of the window size to use between sending acknowledgments.
 // The sender expects acknowledgment from its peer after the sender sends window size bytes.
 // The receiving peer MUST send an Acknowledgement (Section 5.4.3) after receiving the indicated
 // number of bytes since the last Acknowledgement was sent, or from the beginning of the session if no Acknowledgement has yet been sent.
-func SendWindowAcknowledgementSize(w io.Writer, size uint32) {
+func SendWindowAcknowledgementSize(w io.Writer, size uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(5, uint32(payloadLength))
 	if err != nil {
-		fmt.Printf("header creation for WindowAcknowledgementSize failed %v\n", header)
+		return err
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
-	w.Write(buf)
-
+	_, wErr := w.Write(buf)
+	return wErr
 }
 
 // Protocol contro message 6, The client or the server sends this message to limit the output bandwidth of its peer.
@@ -312,20 +315,20 @@ func SendWindowAcknowledgementSize(w io.Writer, size uint32) {
 // 0 - Hard: The peer SHOULD limit its output bandwidth to the indicated window size.
 // 1 - Soft: The peer SHOULD limit its output bandwidth to the the window indicated in this message or the limit already in effect, whichever is smaller.
 // 2 - Dynamic: If the previous Limit Type was Hard, treat this message as though it was marked Hard, otherwise ignore this message.
-func SendSetPeerBandwith(w io.Writer, size uint32, limit byte) {
+func SendSetPeerBandwith(w io.Writer, size uint32, limit byte) error {
 	if limit > 2 {
 		fmt.Printf("given limit is not support, max limit is 2, received %d\n", limit)
 	}
 	payloadLength := 5
 	header, err := createProtocolMessageHeader(6, uint32(payloadLength))
 	if err != nil {
-		fmt.Printf("header creation for SetPeerBandwith failed %v\n", header)
+		return err
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	buf[headerLength+payloadLength-1] = limit
-	w.Write(buf)
-
+	_, wErr := w.Write(buf)
+	return wErr
 }
