@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"math"
-	"strconv"
 )
 
 type AMF0Encoder struct {
@@ -42,12 +41,12 @@ func (e *AMF0Encoder) encodeArray(ecmaArr ECMAArray) error {
 	if _, err := e.writer.Write(buf); err != nil {
 		return err
 	}
-	for i, v := range ecmaArr {
-		key := strconv.Itoa(i)
-		if err := e.encodeKey(key); err != nil {
+	for _, v := range ecmaArr {
+
+		if err := e.encodeKey(v.K); err != nil {
 			return err
 		}
-		if err := e.Encode(v); err != nil {
+		if err := e.Encode(v.V); err != nil {
 			return err
 		}
 	}

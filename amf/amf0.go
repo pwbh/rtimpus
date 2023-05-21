@@ -14,4 +14,9 @@ const (
 
 type Object map[string]interface{}
 
-type ECMAArray []interface{}
+type ECMAArrayItem struct {
+	K string
+	V interface{}
+}
+
+type ECMAArray []ECMAArrayItem

@@ -87,15 +87,13 @@ func (c *Connection) checkAcknowledgement() error {
 }
 
 func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
-	switch command.(type) {
+	switch v := command.(type) {
 	case *Connect:
-		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
-			fmt.Printf("error on SendWindowAcknowledgementSize: %v\n", err)
+		fmt.Println(v)
+		if err := sendSetPeerBandwith(c, 8192, 0); err != nil {
+			fmt.Printf("error on SendStreamBeginEvent: %v\n", err)
 		}
-		if err := sendSetPeerBandwith(c, 1024, 0); err != nil {
-			fmt.Printf("error on SendSetPeerBandwith: %v\n", err)
-		}
-		if err := sendStreamBeginEvent(c, 4); err != nil {
+		if err := sendSetChunkSize(c, 8192); err != nil {
 			fmt.Printf("error on SendStreamBeginEvent: %v\n", err)
 		}
 		if err := sendConnectResult(c); err != nil {

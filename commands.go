@@ -340,7 +340,7 @@ func sendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 func sendConnectResult(c *Connection) error {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := amf.NewAMF0Encoder(buf)
-	if err := encoder.Encode("result"); err != nil {
+	if err := encoder.Encode("_result"); err != nil {
 		return err
 	}
 	if err := encoder.Encode(1); err != nil {
@@ -360,15 +360,18 @@ func sendConnectResult(c *Connection) error {
 
 func getServerProperties() amf.Object {
 	properties := make(amf.Object)
-	properties["code"] = "NetConnection.Connect.Success"
-	properties["description"] = "Connection to the RTMP server was successful."
-	properties["objectEncoding"] = 0
-	properties["audioCodecs"] = amf.ECMAArray{"mp3"}
-	properties["videoCodecs"] = amf.ECMAArray{"h264"}
+	properties["fmsVer"] = "FMS/3,5,5,2004"
+	properties["capabilities"] = 31.0
+	properties["mode"] = 1.0
 	return properties
 }
 
 func getServerInformation() amf.Object {
 	information := make(amf.Object)
+	information["level"] = "status"
+	information["code"] = "NetConnection.Connect.Success"
+	information["description"] = "Connection succeeded"
+	information["data"] = amf.ECMAArray{amf.ECMAArrayItem{K: "version", V: "3,5,5,2004"}}
+	information["objectEncoding"] = OBJECT_ENCODING_AMF0
 	return information
 }

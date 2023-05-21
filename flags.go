@@ -27,3 +27,12 @@ const (
 	VIDEO_CODEC_SUPPORT_VID_H264      = 0x0080 // H264 video
 	VIDEO_CODEC_SUPPORT_VID_ALL       = 0x00FF // All RTMP-supported video codecs
 )
+
+const (
+	VIDEO_FUNCTION_SUPPORT_VID_CLIENT_SEEK = 1 // Indicates that the client can perform frame-accurate seeks
+)
+
+const (
+	OBJECT_ENCODING_AMF0 = 0 // AMF0 object encoding supported by Flash 6 and later
+	OBJECT_ENCODING_AMF3 = 3 // AMF3 encoding from Flash 9 (AS3)
+)
