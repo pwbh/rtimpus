@@ -54,11 +54,11 @@ func TestAMF0EncoderEncodeECMAArray(t *testing.T) {
 		t.Fatalf(`amf0Encoder.Encode(complexObject) =  %v`, err)
 	}
 	ecmaArr := make(ECMAArray, 0, 5)
-	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Hello", Value: "World"})
-	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Version", Value: 2.1})
-	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "url", Value: "https://localhost:10000/"})
-	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Complex", Value: ECMAArray{ECMAArrayItem{Key: "Test", Value: "Test"}}})
-	ecmaArr = append(ecmaArr, ECMAArrayItem{Key: "Hello2", Value: "World2"})
+	ecmaArr = append(ecmaArr, "World")
+	ecmaArr = append(ecmaArr, 2.1)
+	ecmaArr = append(ecmaArr, "https://localhost:10000/")
+	ecmaArr = append(ecmaArr, ECMAArray{"Test"})
+	ecmaArr = append(ecmaArr, "World2")
 	if err := amf0Encoder.Encode(ecmaArr); err != nil {
 		t.Fatalf(`amf0Encoder.Encode(ecmaArr) =  %v`, err)
 	}

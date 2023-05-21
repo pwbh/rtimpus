@@ -130,7 +130,7 @@ func (d *AMF0Decoder) decodeEcmaArray() (ECMAArray, error) {
 	}
 	arr := make(ECMAArray, length)
 	for i := uint32(0); i < length; i++ {
-		key, err := d.decodeString()
+		_, err := d.decodeString()
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +138,7 @@ func (d *AMF0Decoder) decodeEcmaArray() (ECMAArray, error) {
 		if err != nil {
 			return nil, err
 		}
-		arr = append(arr, ECMAArrayItem{Key: key, Value: value})
+		arr = append(arr, value)
 	}
 	return arr, nil
 }
