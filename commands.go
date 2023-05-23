@@ -223,11 +223,11 @@ func createProtocolMessageHeader(messageType byte, payloadLength uint32) ([]byte
 		return nil, errors.New("valid messageType ids 1-6, received >6")
 	}
 	buf := make([]byte, 12)
-	buf[0] = 2                              // Chunk Stream ID
-	utils.PutUint24(buf[1:], 0)             // Timestamp is ignored
-	utils.PutUint24(buf[4:], payloadLength) // Payload length
-	buf[7] = messageType                    // Message Type
-	binary.BigEndian.PutUint32(buf[8:], 0)  // Message Stream ID
+	buf[0] = 2                                // Chunk Stream ID
+	utils.PutUint24(buf[1:], 0)               // Timestamp is ignored
+	utils.PutUint24(buf[4:], payloadLength)   // Message length
+	buf[7] = messageType                      // Message Type
+	binary.LittleEndian.PutUint32(buf[8:], 0) // Message Stream ID
 	return buf, nil
 }
 
@@ -292,6 +292,7 @@ func sendAcknowledgement(c *Connection, sequenceNumber uint32) error {
 // The sender expects acknowledgment from its peer after the sender sends window size bytes.
 // The receiving peer MUST send an Acknowledgement (Section 5.4.3) after receiving the indicated
 // number of bytes since the last Acknowledgement was sent, or from the beginning of the session if no Acknowledgement has yet been sent.
+// Basically it means how often the server/client will send an acknowledgement message to their peer.
 func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(5, uint32(payloadLength))
@@ -316,6 +317,7 @@ func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 // 0 - Hard: The peer SHOULD limit its output bandwidth to the indicated window size.
 // 1 - Soft: The peer SHOULD limit its output bandwidth to the the window indicated in this message or the limit already in effect, whichever is smaller.
 // 2 - Dynamic: If the previous Limit Type was Hard, treat this message as though it was marked Hard, otherwise ignore this message.
+// How big is the throughput of data
 func sendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 	if limit > 2 {
 		fmt.Printf("limit exceeds maximum of 2, received %d\n", limit)
@@ -361,8 +363,8 @@ func sendConnectResult(c *Connection) error {
 func getServerProperties() amf.Object {
 	properties := make(amf.Object)
 	properties["fmsVer"] = "FMS/3,5,5,2004"
-	properties["capabilities"] = 31.0
-	properties["mode"] = 1.0
+	properties["capabilities"] = 31
+	properties["mode"] = 1
 	return properties
 }
 
@@ -371,5 +373,7 @@ func getServerInformation() amf.Object {
 	information["level"] = "status"
 	information["code"] = "NetConnection.Connect.Success"
 	information["description"] = "Connection succeeded"
+	information["clientId"] = 829124
+	information["objectEncoding"] = OBJECT_ENCODING_AMF0
 	return information
 }

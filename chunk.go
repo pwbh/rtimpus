@@ -119,19 +119,15 @@ func parseBasicHeader(b []byte) *BasicHeader {
 }
 
 func getChunkHeaderLength(header *Header) uint32 {
-	basicHeaderLength := header.BasicHeader.Length
-
-	fmt.Println(basicHeaderLength)
-
 	switch header.BasicHeader.Type {
 	case 0:
-		return 11 + basicHeaderLength
+		return 11 + header.BasicHeader.Length
 	case 1:
-		return 7 + basicHeaderLength
+		return 7 + header.BasicHeader.Length
 	case 2:
-		return 3 + basicHeaderLength
+		return 3 + header.BasicHeader.Length
 	case 3:
-		return basicHeaderLength
+		return header.BasicHeader.Length
 	default:
 		return 0
 	}

@@ -17,6 +17,7 @@ type Connection struct {
 	Conn               *net.TCPConn
 	Hash               string
 	ClientMaxChunkSize uint32
+	ServerMaxChunkSize uint32
 	WindowSize         uint32
 	BytesRecievedNoAck uint32
 	PrevChunk          *Chunk
@@ -55,14 +56,12 @@ func (c *Connection) handleChunk(message []byte) {
 		}
 
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.MessageHeader.Timestamp, chunk.header.MessageHeader.Length, chunk.header.MessageHeader.TypeID, chunk.header.MessageHeader.StreamID)
-		fmt.Println(message[totalBytesReceived:])
 
 		switch chunk.header.MessageHeader.TypeID {
 		case 1:
 			c.ClientMaxChunkSize = binary.BigEndian.Uint32(chunk.payload.data)
-			fmt.Println(c.ClientMaxChunkSize)
 		case 3:
-			fmt.Printf("client informs %d bytes received so far\n", binary.BigEndian.Uint32(chunk.payload.data))
+			fmt.Printf("client: %d bytes received\n", binary.BigEndian.Uint32(chunk.payload.data))
 		case 18, 20: // Message Type ID 18,20 is Command Message
 			command, err := UnmarshalCommand(chunk)
 			if err != nil {
@@ -76,36 +75,38 @@ func (c *Connection) handleChunk(message []byte) {
 		}
 
 		totalBytesReceived += chunk.Size()
+	}
 
-		// if err := c.checkAcknowledgement(chunk); err != nil {
-		// 	fmt.Printf("ack failed: %v\n", err)
-		// }
+	if err := sendAcknowledgement(c, totalBytesReceived); err != nil {
+		fmt.Printf("ack failed: %v\n", err)
 	}
 }
 
-func (c *Connection) checkAcknowledgement(chunk *Chunk) error {
-	c.BytesRecievedNoAck += chunk.Size()
-	if c.BytesRecievedNoAck >= c.ClientMaxChunkSize {
-		diff := c.BytesRecievedNoAck - c.ClientMaxChunkSize
-		sequenceNumber := c.BytesRecievedNoAck - diff
-		err := sendAcknowledgement(c, sequenceNumber)
-		if err != nil {
-			return err
-		}
-		c.BytesRecievedNoAck = diff
-	}
-	return nil
-}
+// func (c *Connection) checkAcknowledgement(chunk *Chunk) error {
+// 	fmt.Println(c.BytesRecievedNoAck)
+// 	if c.BytesRecievedNoAck >= c.ClientMaxChunkSize {
+// 		diff := c.BytesRecievedNoAck - c.ClientMaxChunkSize
+// 		sequenceNumber := c.BytesRecievedNoAck - diff
+// 		err := sendAcknowledgement(c, sequenceNumber)
+// 		if err != nil {
+//			return err
+// 		}
+// 		c.BytesRecievedNoAck = diff
+// 	}
+// 	return nil
+// }
 
 func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
-	switch v := command.(type) {
+	switch command.(type) {
 	case *Connect:
-		fmt.Println(v)
-		if err := sendWindowAcknowledgementSize(c, c.ClientMaxChunkSize); err != nil {
+		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
 			fmt.Printf("error on sendWindowAcknowledgementSize: %v\n", err)
 		}
-		if err := sendSetPeerBandwith(c, 1024, 0); err != nil {
+		if err := sendSetPeerBandwith(c, 8192, 2); err != nil {
 			fmt.Printf("error on sendSetPeerBandwith: %v\n", err)
+		}
+		if err := sendStreamBeginEvent(c, 4); err != nil {
+			fmt.Printf("error on sendStreamBeginEvent: %v\n", err)
 		}
 		if err := sendConnectResult(c); err != nil {
 			fmt.Printf("error on sendConnectResult: %v\n", err)
