@@ -318,7 +318,7 @@ func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 // 2 - Dynamic: If the previous Limit Type was Hard, treat this message as though it was marked Hard, otherwise ignore this message.
 func sendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 	if limit > 2 {
-		fmt.Printf("given limit is not support, max limit is 2, received %d\n", limit)
+		fmt.Printf("limit exceeds maximum of 2, received %d\n", limit)
 	}
 	payloadLength := 5
 	header, err := createProtocolMessageHeader(6, uint32(payloadLength))
@@ -371,7 +371,5 @@ func getServerInformation() amf.Object {
 	information["level"] = "status"
 	information["code"] = "NetConnection.Connect.Success"
 	information["description"] = "Connection succeeded"
-	information["data"] = amf.ECMAArray{amf.ECMAArrayItem{K: "version", V: "3,5,5,2004"}}
-	information["objectEncoding"] = OBJECT_ENCODING_AMF0
 	return information
 }

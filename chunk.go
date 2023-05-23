@@ -2,6 +2,7 @@ package rtimpus
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 type BasicHeader struct {
@@ -10,12 +11,16 @@ type BasicHeader struct {
 	Length   uint32
 }
 
+type MessageHeader struct {
+	Timestamp uint32
+	Length    uint32
+	TypeID    uint16
+	StreamID  uint32
+}
+
 type Header struct {
-	BasicHeader     *BasicHeader
-	Timestamp       uint32
-	MessageLength   uint32
-	MessageTypeId   uint16
-	MessageStreamId uint32
+	BasicHeader   *BasicHeader
+	MessageHeader *MessageHeader
 }
 
 type Payload struct {
@@ -28,21 +33,25 @@ type Chunk struct {
 }
 
 func (c *Chunk) Size() uint32 {
-	return getChunkHeaderLength(c.header) + c.header.MessageLength
+	return getChunkHeaderLength(c.header) + c.header.MessageHeader.Length
 }
 
-func parseChunk(c *Connection, message []byte) *Chunk {
-	header := parseHeader(c, message)
+func parseChunk(c *Connection, message []byte) (*Chunk, error) {
+	header, err := parseHeader(c, message)
+
+	if err != nil {
+		return nil, err
+	}
 
 	chunkHeaderLength := getChunkHeaderLength(header)
 
 	return &Chunk{
 		header:  header,
-		payload: &Payload{data: message[chunkHeaderLength : chunkHeaderLength+header.MessageLength]},
-	}
+		payload: &Payload{data: message[chunkHeaderLength : chunkHeaderLength+header.MessageHeader.Length]},
+	}, nil
 }
 
-func parseHeader(c *Connection, message []byte) *Header {
+func parseHeader(c *Connection, message []byte) (*Header, error) {
 	basicHeader := parseBasicHeader(message)
 
 	switch basicHeader.Type {
@@ -50,44 +59,41 @@ func parseHeader(c *Connection, message []byte) *Header {
 		timestamp := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
 		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
 		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
-		messageStreamId := binary.BigEndian.Uint32([]byte{message[basicHeader.Length+7], message[basicHeader.Length+8], message[basicHeader.Length+9], message[basicHeader.Length+10]})
+		messageStreamId := binary.LittleEndian.Uint32([]byte{message[basicHeader.Length+7], message[basicHeader.Length+8], message[basicHeader.Length+9], message[basicHeader.Length+10]})
 
-		c.LastMessageStreamID = messageStreamId
-		c.LastMessageLength = messageLength
+		messageHeader := &MessageHeader{Timestamp: timestamp, Length: messageLength, TypeID: messageTypeId, StreamID: messageStreamId}
 
 		return &Header{
-			BasicHeader:     basicHeader,
-			Timestamp:       timestamp,
-			MessageLength:   messageLength,
-			MessageTypeId:   messageTypeId,
-			MessageStreamId: messageStreamId,
-		}
+			BasicHeader:   basicHeader,
+			MessageHeader: messageHeader,
+		}, nil
 	case 1:
 		timestampDelta := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
 		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
 		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
 
-		c.LastMessageLength = messageLength
+		messageHeader := &MessageHeader{Timestamp: timestampDelta, Length: messageLength, TypeID: messageTypeId, StreamID: c.PrevChunk.header.BasicHeader.StreamID}
 
 		return &Header{
-			BasicHeader:     basicHeader,
-			Timestamp:       timestampDelta,
-			MessageLength:   messageLength,
-			MessageTypeId:   messageTypeId,
-			MessageStreamId: c.LastMessageStreamID,
-		}
+			BasicHeader:   basicHeader,
+			MessageHeader: messageHeader,
+		}, nil
 	case 2:
 		timestampDelta := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
 
-		return &Header{
-			BasicHeader:     basicHeader,
-			Timestamp:       timestampDelta,
-			MessageLength:   c.LastMessageLength,
-			MessageStreamId: c.LastMessageStreamID,
-		}
+		messageHeader := &MessageHeader{Timestamp: timestampDelta, Length: c.PrevChunk.header.BasicHeader.Length, StreamID: c.PrevChunk.header.BasicHeader.StreamID}
 
+		return &Header{
+			BasicHeader:   basicHeader,
+			MessageHeader: messageHeader,
+		}, nil
+	case 3:
+		return &Header{
+			BasicHeader:   basicHeader,
+			MessageHeader: c.PrevChunk.header.MessageHeader,
+		}, nil
 	default:
-		return &Header{BasicHeader: basicHeader}
+		return nil, fmt.Errorf("no header available with given header type %d", basicHeader.Type)
 	}
 }
 
@@ -115,13 +121,17 @@ func parseBasicHeader(b []byte) *BasicHeader {
 func getChunkHeaderLength(header *Header) uint32 {
 	basicHeaderLength := header.BasicHeader.Length
 
+	fmt.Println(basicHeaderLength)
+
 	switch header.BasicHeader.Type {
 	case 0:
 		return 11 + basicHeaderLength
 	case 1:
-		return 7 + 11 + basicHeaderLength
+		return 7 + basicHeaderLength
 	case 2:
-		return 3 + 11 + basicHeaderLength
+		return 3 + basicHeaderLength
+	case 3:
+		return basicHeaderLength
 	default:
 		return 0
 	}
