@@ -3,6 +3,8 @@ package rtimpus
 import (
 	"encoding/binary"
 	"fmt"
+
+	"github.com/pwbh/rtimpus/utils"
 )
 
 type BasicHeader struct {
@@ -131,4 +133,14 @@ func getChunkHeaderLength(header *Header) uint32 {
 	default:
 		return 0
 	}
+}
+
+func createChunkHeader(chunkStreamId uint8, messageStreamId uint32, messageTypeID byte, payloadLength int) ([]byte, error) {
+	buf := make([]byte, 12)
+	buf[0] = chunkStreamId                                  // Chunk Stream ID
+	utils.PutUint24(buf[1:], 0)                             // Timestamp is ignored
+	utils.PutUint24(buf[4:], uint32(payloadLength))         // Message length
+	buf[7] = messageTypeID                                  // Message Type
+	binary.LittleEndian.PutUint32(buf[8:], messageStreamId) // Message Stream ID
+	return buf, nil
 }

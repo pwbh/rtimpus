@@ -219,7 +219,7 @@ func getCreateStream(decoder *amf.AMF0Decoder) (*CallResponse, error) {
 // }
 
 func createProtocolMessageHeader(messageTypeID byte, payloadLength uint32) ([]byte, error) {
-	if messageTypeID > 6 && messageTypeID != 18 && messageTypeID != 20 {
+	if messageTypeID > 6 {
 		return nil, errors.New("valid messageTypeID ids 1-6, received >6")
 	}
 	buf := make([]byte, 12)
@@ -249,6 +249,7 @@ func sendSetChunkSize(c *Connection, size uint32) error {
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	_, wErr := c.Write(buf)
+	fmt.Println(buf)
 	return wErr
 }
 
@@ -304,7 +305,8 @@ func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	_, wErr := c.Write(buf)
-	c.WindowSize = size
+	c.ServerWindowSize = size
+	fmt.Println(buf)
 	return wErr
 }
 
@@ -352,11 +354,7 @@ func sendConnectResult(c *Connection) error {
 	if err := encoder.Encode(properties); err != nil {
 		return err
 	}
-	information := getServerInformation()
-	if err := encoder.Encode(information); err != nil {
-		return err
-	}
-	header, err := createProtocolMessageHeader(20, uint32(encoder.Length()))
+	header, err := createChunkHeader(2, 0, 20, encoder.Length())
 	headerLength := len(header)
 	buf := make([]byte, headerLength+encoder.Length())
 	copy(buf[:headerLength], header)
@@ -369,16 +367,8 @@ func sendConnectResult(c *Connection) error {
 
 func getServerProperties() amf.Object {
 	properties := make(amf.Object)
-	properties["fmsVer"] = "FMS/3,5,5,2004"
-	properties["capabilities"] = 31
-	properties["mode"] = 1
+	properties["code"] = "NetConnection.Connect.Success"
+	properties["description"] = "Connection successful"
+	properties["objectEncoding"] = OBJECT_ENCODING_AMF0
 	return properties
-}
-
-func getServerInformation() amf.Object {
-	information := make(amf.Object)
-	information["code"] = "NetConnection.Connect.Success"
-	information["level"] = "status"
-	information["description"] = "Connection succeeded"
-	return information
 }
