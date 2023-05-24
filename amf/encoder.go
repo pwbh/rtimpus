@@ -9,6 +9,7 @@ import (
 
 type AMF0Encoder struct {
 	writer io.Writer
+	length int
 }
 
 func NewAMF0Encoder(writer io.Writer) *AMF0Encoder {
@@ -19,7 +20,8 @@ func (e *AMF0Encoder) encodeNumber(num float64) error {
 	buf := make([]byte, 9)
 	buf[0] = AMF0NumberMarker
 	binary.BigEndian.PutUint64(buf[1:], math.Float64bits(num))
-	_, err := e.writer.Write(buf)
+	n, err := e.writer.Write(buf)
+	e.length += n
 	return err
 }
 
@@ -29,7 +31,8 @@ func (e *AMF0Encoder) encodeString(str string) error {
 	buf[0] = AMF0StringMarker
 	binary.BigEndian.PutUint16(buf[1:], uint16(length))
 	buf = append(buf, str...)
-	_, err := e.writer.Write(buf)
+	n, err := e.writer.Write(buf)
+	e.length += n
 	return err
 }
 
@@ -38,9 +41,11 @@ func (e *AMF0Encoder) encodeArray(ecmaArr ECMAArray) error {
 	buf := make([]byte, 5)
 	buf[0] = AMF0EcmaArrayMarker
 	binary.BigEndian.PutUint32(buf[1:], length)
-	if _, err := e.writer.Write(buf); err != nil {
+	n, err := e.writer.Write(buf)
+	if err != nil {
 		return err
 	}
+	e.length += n
 	for _, v := range ecmaArr {
 
 		if err := e.encodeKey(v.K); err != nil {
@@ -59,7 +64,8 @@ func (e *AMF0Encoder) encodeBool(v bool) error {
 		value = 1
 	}
 	buf := []byte{AMF0BooleanMarker, value}
-	_, err := e.writer.Write(buf)
+	n, err := e.writer.Write(buf)
+	e.length += n
 	return err
 }
 
@@ -68,15 +74,17 @@ func (e *AMF0Encoder) encodeKey(str string) error {
 	buf := make([]byte, 2, length+2)
 	binary.BigEndian.PutUint16(buf[0:], uint16(length))
 	buf = append(buf, str...)
-	_, err := e.writer.Write(buf)
+	n, err := e.writer.Write(buf)
+	e.length += n
 	return err
 }
 
 func (e *AMF0Encoder) encodeObject(obj Object) error {
-	if _, err := e.writer.Write([]byte{AMF0ObjectMarker}); err != nil {
+	n, err := e.writer.Write([]byte{AMF0ObjectMarker})
+	if err != nil {
 		return err
 	}
-
+	e.length += n
 	for k, v := range obj {
 		if err := e.encodeKey(k); err != nil {
 			return err
@@ -114,17 +122,18 @@ func (e *AMF0Encoder) encodeObject(obj Object) error {
 			return errors.New("type is not recognized")
 		}
 	}
-
 	// As noted in the specification - 0x00 0x00 0x09
-	if _, err := e.writer.Write([]byte{AMF0NumberMarker, AMF0NumberMarker, AMF0ObjectEndMarker}); err != nil {
+	k, err := e.writer.Write([]byte{AMF0NumberMarker, AMF0NumberMarker, AMF0ObjectEndMarker})
+	if err != nil {
 		return err
 	}
-
+	e.length += k
 	return nil
 }
 
 func (e *AMF0Encoder) encodeNil() error {
-	_, err := e.writer.Write([]byte{AMF0NullMarker})
+	n, err := e.writer.Write([]byte{AMF0NullMarker})
+	e.length += n
 	return err
 }
 
@@ -166,4 +175,8 @@ func (e *AMF0Encoder) Encode(value interface{}) error {
 		return errors.New("type is not recognized")
 	}
 	return nil
+}
+
+func (e *AMF0Encoder) Length() int {
+	return e.length
 }

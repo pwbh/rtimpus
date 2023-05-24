@@ -218,15 +218,15 @@ func getCreateStream(decoder *amf.AMF0Decoder) (*CallResponse, error) {
 // 	return buf, nil
 // }
 
-func createProtocolMessageHeader(messageType byte, payloadLength uint32) ([]byte, error) {
-	if messageType > 6 {
-		return nil, errors.New("valid messageType ids 1-6, received >6")
+func createProtocolMessageHeader(messageTypeID byte, payloadLength uint32) ([]byte, error) {
+	if messageTypeID > 6 && messageTypeID != 18 && messageTypeID != 20 {
+		return nil, errors.New("valid messageTypeID ids 1-6, received >6")
 	}
 	buf := make([]byte, 12)
 	buf[0] = 2                                // Chunk Stream ID
 	utils.PutUint24(buf[1:], 0)               // Timestamp is ignored
 	utils.PutUint24(buf[4:], payloadLength)   // Message length
-	buf[7] = messageType                      // Message Type
+	buf[7] = messageTypeID                    // Message Type
 	binary.LittleEndian.PutUint32(buf[8:], 0) // Message Stream ID
 	return buf, nil
 }
@@ -340,8 +340,8 @@ func sendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 }
 
 func sendConnectResult(c *Connection) error {
-	buf := bytes.NewBuffer([]byte{})
-	encoder := amf.NewAMF0Encoder(buf)
+	objBuf := bytes.NewBuffer([]byte{})
+	encoder := amf.NewAMF0Encoder(objBuf)
 	if err := encoder.Encode("_result"); err != nil {
 		return err
 	}
@@ -356,7 +356,14 @@ func sendConnectResult(c *Connection) error {
 	if err := encoder.Encode(information); err != nil {
 		return err
 	}
-	_, err := c.Write(buf.Bytes())
+	header, err := createProtocolMessageHeader(20, uint32(encoder.Length()))
+	headerLength := len(header)
+	buf := make([]byte, headerLength+encoder.Length())
+	copy(buf[:headerLength], header)
+	copy(buf[headerLength:], objBuf.Bytes())
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -370,10 +377,8 @@ func getServerProperties() amf.Object {
 
 func getServerInformation() amf.Object {
 	information := make(amf.Object)
-	information["level"] = "status"
 	information["code"] = "NetConnection.Connect.Success"
+	information["level"] = "status"
 	information["description"] = "Connection succeeded"
-	information["clientId"] = 829124
-	information["objectEncoding"] = OBJECT_ENCODING_AMF0
 	return information
 }

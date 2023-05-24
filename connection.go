@@ -40,6 +40,7 @@ func (c *Connection) Write(b []byte) (int, error) {
 
 func (c *Connection) handleChunk(message []byte) {
 	fmt.Printf("Message len: %d\n", len(message))
+	fmt.Println(message)
 
 	totalBytesReceived := uint32(0)
 
@@ -61,8 +62,8 @@ func (c *Connection) handleChunk(message []byte) {
 		case 1:
 			c.ClientMaxChunkSize = binary.BigEndian.Uint32(chunk.payload.data)
 		case 3:
-			fmt.Printf("client: %d bytes received\n", binary.BigEndian.Uint32(chunk.payload.data))
-		case 18, 20: // Message Type ID 18,20 is Command Message
+			fmt.Printf("client: %d bytes acknowledged\n", binary.BigEndian.Uint32(chunk.payload.data))
+		case 20, 17: // Message Type ID 20, 17 is Command Message
 			command, err := UnmarshalCommand(chunk)
 			if err != nil {
 				fmt.Println(err)
@@ -75,39 +76,39 @@ func (c *Connection) handleChunk(message []byte) {
 		}
 
 		totalBytesReceived += chunk.Size()
+
+		// if err := c.checkAcknowledgement(chunk); err != nil {
+		// 	fmt.Printf("ack failed: %v\n", err)
+		// }
 	}
 
-	if err := sendAcknowledgement(c, totalBytesReceived); err != nil {
-		fmt.Printf("ack failed: %v\n", err)
-	}
 }
 
-// func (c *Connection) checkAcknowledgement(chunk *Chunk) error {
-// 	fmt.Println(c.BytesRecievedNoAck)
-// 	if c.BytesRecievedNoAck >= c.ClientMaxChunkSize {
-// 		diff := c.BytesRecievedNoAck - c.ClientMaxChunkSize
-// 		sequenceNumber := c.BytesRecievedNoAck - diff
-// 		err := sendAcknowledgement(c, sequenceNumber)
-// 		if err != nil {
-//			return err
-// 		}
-// 		c.BytesRecievedNoAck = diff
-// 	}
-// 	return nil
-// }
+func (c *Connection) checkAcknowledgement(chunk *Chunk) error {
+
+	if c.BytesRecievedNoAck >= c.ClientMaxChunkSize {
+		diff := c.BytesRecievedNoAck - c.ClientMaxChunkSize
+		sequenceNumber := c.BytesRecievedNoAck - diff
+		err := sendAcknowledgement(c, sequenceNumber)
+		if err != nil {
+			return err
+		}
+		c.BytesRecievedNoAck = diff
+	}
+	return nil
+}
 
 func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
-	switch command.(type) {
+	switch v := command.(type) {
 	case *Connect:
-		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
-			fmt.Printf("error on sendWindowAcknowledgementSize: %v\n", err)
-		}
-		if err := sendSetPeerBandwith(c, 8192, 2); err != nil {
+		fmt.Println(v)
+		if err := sendSetPeerBandwith(c, 2048, 0); err != nil {
 			fmt.Printf("error on sendSetPeerBandwith: %v\n", err)
 		}
-		if err := sendStreamBeginEvent(c, 4); err != nil {
-			fmt.Printf("error on sendStreamBeginEvent: %v\n", err)
+		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
+			fmt.Printf("error on sendSetPeerBandwith: %v\n", err)
 		}
+
 		if err := sendConnectResult(c); err != nil {
 			fmt.Printf("error on sendConnectResult: %v\n", err)
 		}

@@ -2,6 +2,7 @@ package rtimpus
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"time"
 )
@@ -17,9 +18,11 @@ func sendStreamBeginEvent(w io.Writer, streamID uint32) error {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
+	copy(buf, header)
 	binary.BigEndian.PutUint16(buf[headerLength:], 0)
 	binary.BigEndian.PutUint32(buf[headerLength+2:], streamID)
 	_, wErr := w.Write(buf)
+	fmt.Println(buf)
 	return wErr
 }
 
@@ -34,6 +37,7 @@ func sendStreamEOFEvent(w io.Writer, streamID uint32) error {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
+	copy(buf, header)
 	binary.BigEndian.PutUint16(buf[headerLength:], 1)
 	binary.BigEndian.PutUint32(buf[headerLength+2:], streamID)
 	_, wErr := w.Write(buf)
@@ -51,6 +55,7 @@ func sendStreamDryEvent(w io.Writer, streamID uint32) error {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
+	copy(buf, header)
 	binary.BigEndian.PutUint16(buf[headerLength:], 2)
 	binary.BigEndian.PutUint32(buf[headerLength+2:], streamID)
 	_, wErr := w.Write(buf)
@@ -68,6 +73,7 @@ func sendBufferLengthEvent(w io.Writer, streamID uint32, bufferLength uint32) er
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
+	copy(buf, header)
 	binary.BigEndian.PutUint16(buf[headerLength:], 3)
 	binary.BigEndian.PutUint32(buf[headerLength+2:], streamID)
 	binary.BigEndian.PutUint32(buf[headerLength+6:], bufferLength)
@@ -85,6 +91,7 @@ func sendStreamlsRecordedEvent(w io.Writer, streamID uint32) error {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
+	copy(buf, header)
 	binary.BigEndian.PutUint16(buf[headerLength:], 4)
 	binary.BigEndian.PutUint32(buf[headerLength+2:], streamID)
 	_, wErr := w.Write(buf)
@@ -102,6 +109,7 @@ func sendPingRequestEvent(w io.Writer) error {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
+	copy(buf, header)
 	binary.BigEndian.PutUint16(buf[headerLength:], 6)
 	binary.BigEndian.PutUint32(buf[headerLength+2:], uint32(time.Now().Unix()))
 	_, wErr := w.Write(buf)
@@ -118,6 +126,7 @@ func sendPingResponseEvent(w io.Writer, timestamp uint32) error {
 	}
 	headerLength := len(header)
 	buf := make([]byte, headerLength+payloadLength)
+	copy(buf, header)
 	binary.BigEndian.PutUint16(buf[headerLength:], 7)
 	binary.BigEndian.PutUint32(buf[headerLength+2:], timestamp)
 	_, wErr := w.Write(buf)
