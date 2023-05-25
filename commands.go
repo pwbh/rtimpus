@@ -11,10 +11,9 @@ import (
 )
 
 type Connect struct {
-	CommandName          string
-	TransactionID        float64
-	CommandObject        amf.Object
-	OptionaUserArguments amf.Object
+	CommandName   string
+	TransactionID float64
+	CommandObject amf.Object
 }
 
 type CallResponse struct {
@@ -291,7 +290,6 @@ func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	_, wErr := c.Write(buf)
 	c.ServerWindowSize = size
-	fmt.Println(buf)
 	return wErr
 }
 

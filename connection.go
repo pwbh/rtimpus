@@ -40,35 +40,32 @@ func (c *Connection) Write(b []byte) (int, error) {
 
 func (c *Connection) handleChunk(message []byte) {
 	fmt.Printf("Message len: %d\n", len(message))
+	fmt.Println(message)
 
 	currentTotalBytesReceived := uint32(0)
 
 	for int(currentTotalBytesReceived) < len(message) {
 		chunk, err := parseChunk(c, message[currentTotalBytesReceived:])
-
 		if chunk.header.BasicHeader.Type < 3 {
 			c.PrevChunk = chunk
 		}
-
 		if err != nil {
 			fmt.Printf("fatal error in recieving data from client: %v", err)
 			return
 		}
-
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.MessageHeader.Timestamp, chunk.header.MessageHeader.Length, chunk.header.MessageHeader.TypeID, chunk.header.MessageHeader.StreamID)
-
 		switch chunk.header.MessageHeader.TypeID {
 		case 1:
 			c.ClientMaxChunkSize = binary.BigEndian.Uint32(chunk.payload.data)
 		case 3:
 			fmt.Printf("client: %d bytes acknowledged\n", binary.BigEndian.Uint32(chunk.payload.data))
-		case 20, 17: // Message Type ID 20, 17 is Command Message
+		case 20, 18: // Message Type ID 20, 18 is Command Message
 			command, err := UnmarshalCommand(chunk)
-			fmt.Println(command)
 			if err != nil {
 				fmt.Printf("error when unmarshaling command: %v\n", err)
 				return
 			}
+			fmt.Println(command)
 			c.handleCommand(command, chunk)
 		default:
 			fmt.Printf("message ID: %d is not handled yet\n", chunk.header.MessageHeader.TypeID)
@@ -104,17 +101,14 @@ func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
 	switch command.(type) {
 	case *Connect:
 		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
-			fmt.Printf("error on sendWindowAcknowledgementSize: %v\n", err)
-		}
-		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
-			fmt.Printf("error on sendWindowAcknowledgementSize: %v\n", err)
-		}
-		if err := sendSetChunkSize(c, 4096); err != nil {
-			fmt.Printf("error on sendSetChunkSize: %v\n", err)
-		}
-		if err := sendConnectResult(c); err != nil {
 			fmt.Printf("error on sendConnectResult: %v\n", err)
 		}
+		if err := sendSetPeerBandwith(c, 4096, 0); err != nil {
+			fmt.Printf("error on sendConnectResult: %v\n", err)
+		}
+	//	if err := sendConnectResult(c); err != nil {
+	//		fmt.Printf("error on sendConnectResult: %v\n", err)
+	//	}
 	default:
 		fmt.Printf("unrecognized command received, %v\n", command)
 	}

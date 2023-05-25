@@ -59,7 +59,7 @@ func parseHeader(c *Connection, message []byte) (*Header, error) {
 	switch basicHeader.Type {
 	case 0:
 		timestamp := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
-		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
+		messageLength := uint32(uint(message[basicHeader.Length+5])|uint(message[basicHeader.Length+4])<<8|uint(message[basicHeader.Length+3])<<16) + 1
 		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
 		messageStreamId := binary.LittleEndian.Uint32([]byte{message[basicHeader.Length+7], message[basicHeader.Length+8], message[basicHeader.Length+9], message[basicHeader.Length+10]})
 
@@ -71,7 +71,7 @@ func parseHeader(c *Connection, message []byte) (*Header, error) {
 		}, nil
 	case 1:
 		timestampDelta := uint32(uint(message[basicHeader.Length+2]) | uint(message[basicHeader.Length+1])<<8 | uint(message[basicHeader.Length])<<16)
-		messageLength := uint32(uint(message[basicHeader.Length+5]) | uint(message[basicHeader.Length+4])<<8 | uint(message[basicHeader.Length+3])<<16)
+		messageLength := uint32(uint(message[basicHeader.Length+5])|uint(message[basicHeader.Length+4])<<8|uint(message[basicHeader.Length+3])<<16) + 1
 		messageTypeId := binary.BigEndian.Uint16([]byte{0x00, message[basicHeader.Length+6]})
 
 		messageHeader := &MessageHeader{Timestamp: timestampDelta, Length: messageLength, TypeID: messageTypeId, StreamID: c.PrevChunk.header.BasicHeader.StreamID}
