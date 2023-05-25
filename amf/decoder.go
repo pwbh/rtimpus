@@ -3,7 +3,6 @@ package amf
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 )
 
@@ -64,7 +63,7 @@ func (d *AMF0Decoder) Decode() (interface{}, error) {
 	case AMF0ObjectEndMarker:
 		return nil, errors.New("unexpected AMF0 object end marker")
 	default:
-		return nil, fmt.Errorf("unknown AMF0 marker: %02x", marker)
+		return d.Decode()
 	}
 }
 
@@ -103,15 +102,15 @@ func (d *AMF0Decoder) decodeObject() (Object, error) {
 		}
 		if name == "" {
 			marker, err := d.readByte()
-
 			if err != nil {
+				if err == io.EOF {
+					break
+				}
 				return nil, err
 			}
-
 			if marker != AMF0ObjectEndMarker {
 				return nil, errors.New("missing AMF0 object end marker")
 			}
-
 			break
 		}
 		value, err := d.Decode()

@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/pwbh/rtimpus/amf"
 	"github.com/pwbh/rtimpus/utils"
@@ -89,20 +88,6 @@ func getConnectResult(decoder *amf.AMF0Decoder) (*Connect, error) {
 	}
 
 	connect.CommandObject = commObj
-
-	optionalUserAgreements, err := decoder.Decode()
-
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-
-	optUA, ok := optionalUserAgreements.(amf.Object)
-
-	if !ok {
-		connect.OptionaUserArguments = nil
-	} else {
-		connect.OptionaUserArguments = optUA
-	}
 
 	return connect, nil
 }

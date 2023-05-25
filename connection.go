@@ -63,10 +63,10 @@ func (c *Connection) handleChunk(message []byte) {
 		case 3:
 			fmt.Printf("client: %d bytes acknowledged\n", binary.BigEndian.Uint32(chunk.payload.data))
 		case 20, 17: // Message Type ID 20, 17 is Command Message
-			fmt.Println(message[currentTotalBytesReceived:])
 			command, err := UnmarshalCommand(chunk)
+			fmt.Println(command)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("error when unmarshaling command: %v\n", err)
 				return
 			}
 			c.handleCommand(command, chunk)
