@@ -277,7 +277,7 @@ func sendAcknowledgement(c *Connection, sequenceNumber uint32) error {
 // The sender expects acknowledgment from its peer after the sender sends window size bytes.
 // The receiving peer MUST send an Acknowledgement (Section 5.4.3) after receiving the indicated
 // number of bytes since the last Acknowledgement was sent, or from the beginning of the session if no Acknowledgement has yet been sent.
-// Basically it means how often the server/client will send an acknowledgement message to their peer.
+// Basically it means how often the server/client will send an acknowledgement message to their peer, or also known as ServerBW
 func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 	payloadLength := 4
 	header, err := createProtocolMessageHeader(5, uint32(payloadLength))
@@ -302,7 +302,7 @@ func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 // 0 - Hard: The peer SHOULD limit its output bandwidth to the indicated window size.
 // 1 - Soft: The peer SHOULD limit its output bandwidth to the the window indicated in this message or the limit already in effect, whichever is smaller.
 // 2 - Dynamic: If the previous Limit Type was Hard, treat this message as though it was marked Hard, otherwise ignore this message.
-// How big is the throughput of data
+// How big is the throughput of data also knows as the ClientBW
 func sendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 	if limit > 2 {
 		fmt.Printf("limit exceeds maximum of 2, received %d\n", limit)
@@ -345,6 +345,7 @@ func sendConnectResult(c *Connection) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(buf)
 	return err
 }
 

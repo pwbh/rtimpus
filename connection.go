@@ -21,6 +21,7 @@ type Connection struct {
 	ServerWindowSize   uint32
 	totalBytesReceived uint32
 	PrevChunk          *Chunk
+	AccChunk           *Chunk
 }
 
 func (c *Connection) Process(message []byte) {
@@ -46,9 +47,26 @@ func (c *Connection) handleChunk(message []byte) {
 
 	for int(currentTotalBytesReceived) < len(message) {
 		chunk, err := parseChunk(c, message[currentTotalBytesReceived:])
+
 		if chunk.header.BasicHeader.Type < 3 {
 			c.PrevChunk = chunk
 		}
+
+		fmt.Println(chunk.header.MessageHeader.Length, uint32(len(chunk.payload.data)))
+		fmt.Println(chunk.payload.data)
+
+		if chunk.header.MessageHeader.Length > uint32(len(chunk.payload.data)) && c.AccChunk == nil {
+			fmt.Println("bigger")
+			c.AccChunk = chunk
+			break
+		} else if c.AccChunk != nil {
+			c.AccChunk.payload.data = append(c.AccChunk.payload.data, chunk.payload.data...)
+			if chunk.header.MessageHeader.Length != uint32(len(c.AccChunk.payload.data)+1) {
+				break
+			}
+			chunk = c.AccChunk
+		}
+
 		if err != nil {
 			fmt.Printf("fatal error in recieving data from client: %v", err)
 			return
@@ -103,12 +121,12 @@ func (c *Connection) handleCommand(command interface{}, chunk *Chunk) {
 		if err := sendWindowAcknowledgementSize(c, 4096); err != nil {
 			fmt.Printf("error on sendConnectResult: %v\n", err)
 		}
-		if err := sendSetPeerBandwith(c, 4096, 0); err != nil {
+		if err := sendSetPeerBandwith(c, 8192, 0); err != nil {
 			fmt.Printf("error on sendConnectResult: %v\n", err)
 		}
-	//	if err := sendConnectResult(c); err != nil {
-	//		fmt.Printf("error on sendConnectResult: %v\n", err)
-	//	}
+		if err := sendConnectResult(c); err != nil {
+			fmt.Printf("error on sendConnectResult: %v\n", err)
+		}
 	default:
 		fmt.Printf("unrecognized command received, %v\n", command)
 	}
