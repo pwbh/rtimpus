@@ -45,7 +45,7 @@ func listenOnConnection(tcpConn *net.TCPConn) *Connection {
 	connection := new(Connection)
 	connection.Conn = tcpConn
 	connection.Phase = Uninitialized
-	connection.ClientMaxChunkSize = 128
+	//	connection.ClientBW = 128
 
 	go func() {
 		buf := make([]byte, 0, 4096)
