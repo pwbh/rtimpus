@@ -40,13 +40,18 @@ func (c *Chunk) Size() uint32 {
 
 func parseChunk(c *Connection, message []byte) (*Chunk, error) {
 	header, err := parseHeader(c, message)
-
 	if err != nil {
 		return nil, err
 	}
+	payload := getPayload(message, header)
+	return &Chunk{
+		header:  header,
+		payload: payload,
+	}, nil
+}
 
+func getPayload(message []byte, header *Header) *Payload {
 	chunkHeaderLength := getChunkHeaderLength(header)
-
 	max := uint32(0)
 	messageLen := uint32(len(message))
 	if chunkHeaderLength+header.MessageHeader.Length <= messageLen {
@@ -54,11 +59,7 @@ func parseChunk(c *Connection, message []byte) (*Chunk, error) {
 	} else {
 		max = messageLen
 	}
-
-	return &Chunk{
-		header:  header,
-		payload: &Payload{data: message[chunkHeaderLength:max]},
-	}, nil
+	return &Payload{data: message[chunkHeaderLength:max]}
 }
 
 func parseHeader(c *Connection, message []byte) (*Header, error) {

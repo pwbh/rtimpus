@@ -233,7 +233,6 @@ func sendSetChunkSize(c *Connection, size uint32) error {
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	_, wErr := c.Write(buf)
-	fmt.Println(buf)
 	return wErr
 }
 
@@ -289,7 +288,7 @@ func sendWindowAcknowledgementSize(c *Connection, size uint32) error {
 	copy(buf[:headerLength], header)
 	binary.BigEndian.PutUint32(buf[headerLength:], size)
 	_, wErr := c.Write(buf)
-	c.ServerWindowSize = size
+	c.ServerBW = size
 	return wErr
 }
 
@@ -321,6 +320,7 @@ func sendSetPeerBandwith(c *Connection, size uint32, limit byte) error {
 	if wErr != nil {
 		return wErr
 	}
+	c.ClientBW = size
 	return nil
 }
 
@@ -345,7 +345,6 @@ func sendConnectResult(c *Connection) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(buf)
 	return err
 }
 

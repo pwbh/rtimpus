@@ -16,12 +16,11 @@ type Connection struct {
 	Err                error
 	Conn               *net.TCPConn
 	Hash               string
-	ClientMaxChunkSize uint32
-	ServerMaxChunkSize uint32
-	ServerWindowSize   uint32
+	ClientBW           uint32
+	ServerBW           uint32
 	totalBytesReceived uint32
 	PrevChunk          *Chunk
-	AccChunk           *Chunk
+	AccumulatedChunk   *Chunk
 }
 
 func (c *Connection) Process(message []byte) {
@@ -41,7 +40,6 @@ func (c *Connection) Write(b []byte) (int, error) {
 
 func (c *Connection) handleChunk(message []byte) {
 	fmt.Printf("Message len: %d\n", len(message))
-	fmt.Println(message)
 
 	currentTotalBytesReceived := uint32(0)
 
@@ -52,19 +50,15 @@ func (c *Connection) handleChunk(message []byte) {
 			c.PrevChunk = chunk
 		}
 
-		fmt.Println(chunk.header.MessageHeader.Length, uint32(len(chunk.payload.data)))
-		fmt.Println(chunk.payload.data)
-
-		if chunk.header.MessageHeader.Length > uint32(len(chunk.payload.data)) && c.AccChunk == nil {
-			fmt.Println("bigger")
-			c.AccChunk = chunk
+		if chunk.header.MessageHeader.Length > uint32(len(chunk.payload.data)) && c.AccumulatedChunk == nil {
+			c.AccumulatedChunk = chunk
 			break
-		} else if c.AccChunk != nil {
-			c.AccChunk.payload.data = append(c.AccChunk.payload.data, chunk.payload.data...)
-			if chunk.header.MessageHeader.Length != uint32(len(c.AccChunk.payload.data)+1) {
+		} else if c.AccumulatedChunk != nil {
+			c.AccumulatedChunk.payload.data = append(c.AccumulatedChunk.payload.data, chunk.payload.data...)
+			if chunk.header.MessageHeader.Length != uint32(len(c.AccumulatedChunk.payload.data)+1) {
 				break
 			}
-			chunk = c.AccChunk
+			chunk = c.AccumulatedChunk
 		}
 
 		if err != nil {
@@ -74,7 +68,7 @@ func (c *Connection) handleChunk(message []byte) {
 		fmt.Printf("Chunk Type: %d | Chunk Stream ID: %d | Timestamp: %d | Message Length: %d | Message Type ID: %d | Message Stream ID: %d\n", chunk.header.BasicHeader.Type, chunk.header.BasicHeader.StreamID, chunk.header.MessageHeader.Timestamp, chunk.header.MessageHeader.Length, chunk.header.MessageHeader.TypeID, chunk.header.MessageHeader.StreamID)
 		switch chunk.header.MessageHeader.TypeID {
 		case 1:
-			c.ClientMaxChunkSize = binary.BigEndian.Uint32(chunk.payload.data)
+			fmt.Println("Received chunk size: ", chunk.payload.data)
 		case 3:
 			fmt.Printf("client: %d bytes acknowledged\n", binary.BigEndian.Uint32(chunk.payload.data))
 		case 20, 18: // Message Type ID 20, 18 is Command Message
