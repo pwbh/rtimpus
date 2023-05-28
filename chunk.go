@@ -125,7 +125,6 @@ func parseBasicHeader(b []byte) *BasicHeader {
 		basicHeader.StreamID = uint32(b[2])*256 + uint32(b[1]) + 64
 		basicHeader.Length = 3
 	}
-
 	return basicHeader
 }
 
@@ -146,9 +145,13 @@ func getChunkHeaderLength(header *Header) uint32 {
 
 func createChunkHeader(chunkStreamId uint8, messageStreamId uint32, messageTypeID byte, payloadLength int) ([]byte, error) {
 	buf := make([]byte, 12)
-	buf[0] = chunkStreamId                                  // Chunk Stream ID
-	utils.PutUint24(buf[1:], 0)                             // Timestamp is ignored
-	utils.PutUint24(buf[4:], uint32(payloadLength))         // Message length
+	buf[0] = chunkStreamId                              // Chunk Stream ID
+	if err := utils.PutUint24(buf[1:], 0); err != nil { // Timestamp is ignored
+		return nil, err
+	}
+	if err := utils.PutUint24(buf[4:], uint32(payloadLength)); err != nil { // Message length
+		return nil, err
+	}
 	buf[7] = messageTypeID                                  // Message Type
 	binary.LittleEndian.PutUint32(buf[8:], messageStreamId) // Message Stream ID
 	return buf, nil
